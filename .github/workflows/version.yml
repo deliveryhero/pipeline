@@ -1,0 +1,22 @@
+name: version
+
+on:
+  push:
+    branches: 
+      - main
+
+jobs:
+  conventional-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Increment Version + Generate Changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.github_token }}
+          skip-version-file: true
+          output-file: false
+          skip-commit: true

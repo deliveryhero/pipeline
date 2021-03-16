@@ -1,35 +1,33 @@
 package util
 
-import (
-	"sync"
-)
+import "sync"
 
-// Merge fans multiple error channels in to a single error channel
-func Merge(errChans ...<-chan error) <-chan error {
-	mergedChan := make(chan error)
+// Merge fans multiple channels in to a single channel
+func Merge(ins ...<-chan interface{}) <-chan interface{} {
+	out := make(chan interface{})
 
-	// Create a WaitGroup that waits for all of the errChans to close
+	// Create a WaitGroup that waits for all of the ins to close
 	var wg sync.WaitGroup
-	wg.Add(len(errChans))
+	wg.Add(len(ins))
 	go func() {
-		// When all of the errChans are closed, close the mergedChan
+		// When all of the ins are closed, close the out
 		wg.Wait()
-		close(mergedChan)
+		close(out)
 	}()
 
-	for i := range errChans {
-		go func(errChan <-chan error) {
-			// Wait for each errChan to close
-			for err := range errChan {
-				if err != nil {
-					// Fan the contents of each errChan into the mergedChan
-					mergedChan <- err
+	for i := range ins {
+		go func(in <-chan interface{}) {
+			// Wait for each in to close
+			for i := range in {
+				if i != nil {
+					// Fan the contents of each in into the out
+					out <- i
 				}
 			}
 			// Tell the WaitGroup that one of the errChans is closed
 			wg.Done()
-		}(errChans[i])
+		}(ins[i])
 	}
 
-	return mergedChan
+	return out
 }

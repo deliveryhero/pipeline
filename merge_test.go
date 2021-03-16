@@ -17,8 +17,8 @@ type task struct {
 }
 
 // do performs the task
-func (t task) do() <-chan error {
-	out := make(chan error)
+func (t task) do() <-chan interface{} {
+	out := make(chan interface{})
 	go func() {
 		defer close(out)
 		time.Sleep(t.waitFor)
@@ -99,9 +99,9 @@ func TestMerge(t *testing.T) {
 			errorCount: 1,
 		}},
 	}} {
-		if !t.Run(test.description, func(t *testing.T) {
+		t.Run(test.description, func(t *testing.T) {
 			// Start doing all of the tasks
-			var errChans []<-chan error
+			var errChans []<-chan interface{}
 			for _, task := range test.tasks {
 				errChans = append(errChans, task.do())
 			}
@@ -119,18 +119,22 @@ func TestMerge(t *testing.T) {
 		loop:
 			for {
 				select {
-				case err, ok := <-merged:
+				case i, ok := <-merged:
 					if !ok {
 						// The chan has closed
 						break loop
+					} else if err, ok := i.(error); ok {
+						errs = append(errs, err)
+					} else {
+						t.Errorf("'%+v' is not an error!", i)
+						return
 					}
-					errs = append(errs, err)
 				case <-timeout:
 					if isExpected := test.finishBefore == 0; isExpected {
 						// We're testing that open channels cause a timeout
 						break loop
 					}
-					t.Fatal("timed out!")
+					t.Error("timed out!")
 				}
 			}
 
@@ -138,21 +142,19 @@ func TestMerge(t *testing.T) {
 			lenErrs, lenExpectedErros := len(errs), len(test.expectedErrors)
 			for i, expectedError := range test.expectedErrors {
 				if i >= lenErrs {
-					t.Fatalf("expectedErrors[%d]: '%s' != <nil>", i, expectedError)
+					t.Errorf("expectedErrors[%d]: '%s' != <nil>", i, expectedError)
 				} else if err := errs[i]; expectedError.Error() != err.Error() {
-					t.Fatalf("expectedErrors[%d]: '%s' != %s", i, expectedError, err)
+					t.Errorf("expectedErrors[%d]: '%s' != %s", i, expectedError, err)
 				}
 			}
 
 			// Check that we have no additional error messages other than the ones we expected
 			if hasTooManyErrors := lenErrs > lenExpectedErros; hasTooManyErrors {
 				for _, err := range errs[lenExpectedErros-1:] {
-					t.Fatalf("'%s' is unexpected!", err)
+					t.Errorf("'%s' is unexpected!", err)
 				}
 			}
-		}) {
-			t.Fail()
-		}
+		})
 	}
 
 }

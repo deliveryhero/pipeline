@@ -5,6 +5,7 @@ I will be publishing articles referencing the items in this package as they are 
 
 ### Articles
 1. `merge.go` - [API Engineering Patterns in Go](#)
+2. `collect.go` + `concurrently.go` + `merge.go` - [Pipeline Pattern in Go](#)
 
 ## Feedback
 You can find me on twitter and every other social platform [@marksalpeter](https://twitter.com/marksalpeter). I would love to hear from you. If you find a bug in one of my utilities, please let me know in an issue or pr. 

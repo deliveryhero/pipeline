@@ -9,120 +9,120 @@ import (
 // TestCollect tests the following cases of the Collect func
 // 1. Closes when in closes
 // 2. Remains Open if in remains open
-// 3. Collects max and returns chunks
+// 3. Collects max and returns immediately
 // 4. Returns everything passed in if less than max after duration
 // 5. After duration with nothing in the buffer, nothing is returned, channel remains open
 func TestCollect(t *testing.T) {
-	// emit emits a slice of strings as a channel of interfaces
-	emit := func(ins []string, delay time.Duration) <-chan interface{} {
-		out := make(chan interface{})
-		go func() {
-			defer close(out)
-			for _, i := range ins {
-				time.Sleep(delay)
-				out <- i
-			}
-		}()
-		return out
-	}
-
+	const maxTestDuration = time.Second
 	type args struct {
-		max      int
-		duration time.Duration
-		in       []string
-		inDelay  time.Duration
+		maxSize     int
+		maxDuration time.Duration
+		in          []interface{}
+		inDelay     time.Duration
 	}
 	type want struct {
-		out   [][]interface{}
-		close bool
+		out  []interface{}
+		open bool
 	}
 	for _, test := range []struct {
-		name    string
-		timeout time.Duration
-		args    args
-		want    want
+		name string
+		args args
+		want want
 	}{{
-		name:    "closes when in closes",
-		timeout: 10 * time.Millisecond,
+		name: "out closes when in closes",
 		args: args{
-			max:      20,
-			duration: time.Second, // should close even if duration hasn't elapsed
-			in:       nil,
+			maxSize:     20,
+			maxDuration: maxTestDuration,
+			in:          nil,
+			inDelay:     0,
 		},
 		want: want{
-			out:   nil,
-			close: true,
+			out:  nil,
+			open: false,
 		},
 	}, {
-		name:    "remains open if in remains open",
-		timeout: time.Second,
+		name: "out remains open if in remains open",
 		args: args{
-			max:      1,
-			duration: time.Second,
-			in:       []string{"one second", "two seconds", "three seconds"},
-			inDelay:  750 * time.Millisecond,
+			maxSize:     2,
+			maxDuration: maxTestDuration,
+			in:          []interface{}{1, 2, 3},
+			inDelay:     (maxTestDuration / 2) - (100 * time.Millisecond),
 		},
 		want: want{
-			out:   [][]interface{}{{"one second"}},
-			close: false,
+			out:  []interface{}{[]interface{}{1, 2}},
+			open: true,
 		},
 	}, {
-		name:    "collects max and returns chunks",
-		timeout: 60 * time.Millisecond,
+		name: "collects maxSize inputs and returns",
 		args: args{
-			max:      2,
-			duration: time.Second,
-			inDelay:  10 * time.Millisecond,
-			in:       []string{"1", "2", "3", "4", "5"},
+			maxSize:     2,
+			maxDuration: maxTestDuration / 10 * 9,
+			inDelay:     maxTestDuration / 10,
+			in:          []interface{}{1, 2, 3, 4, 5},
 		},
 		want: want{
-			out:   [][]interface{}{{"1", "2"}, {"3", "4"}, {"5"}},
-			close: true,
+			out: []interface{}{
+				[]interface{}{1, 2},
+				[]interface{}{3, 4},
+				[]interface{}{5},
+			},
+			open: false,
 		},
 	}, {
-		name:    "returns chunk after duration",
-		timeout: 45 * time.Millisecond,
+		name: "collection returns after maxDuration with < maxSize",
 		args: args{
-			max:      10,
-			duration: 10 * time.Millisecond,
-			inDelay:  8 * time.Millisecond,
-			in:       []string{"1", "2", "3", "4", "5"},
+			maxSize:     10,
+			maxDuration: maxTestDuration / 4,
+			inDelay:     (maxTestDuration / 4) - (10 * time.Millisecond),
+			in:          []interface{}{1, 2, 3, 4, 5},
 		},
 		want: want{
-			out:   [][]interface{}{{"1"}, {"2"}, {"3"}, {"4"}},
-			close: false,
+			out: []interface{}{
+				[]interface{}{1},
+				[]interface{}{2},
+				[]interface{}{3},
+				[]interface{}{4},
+			},
+			open: true,
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
-			// Create the timeout
-			timeoutAfter := time.After(test.timeout)
+			// Create the in channel
+			in := make(chan interface{})
+			go func() {
+				defer close(in)
+				for _, i := range test.args.in {
+					time.Sleep(test.args.inDelay)
+					in <- i
+				}
+			}()
 
 			// Collect responses
-			collect := Collect(test.args.max, test.args.duration, emit(test.args.in, test.args.inDelay))
-			var outs [][]interface{}
-			var didClose bool
+			collect := Collect(test.args.maxSize, test.args.maxDuration, in)
+			timeout := time.After(maxTestDuration)
+			var outs []interface{}
+			var isOpen bool
 		loop:
 			for {
 				select {
 				case out, open := <-collect:
 					if !open {
-						didClose = true
+						isOpen = false
 						break loop
 					}
+					isOpen = true
 					outs = append(outs, out)
-				case <-timeoutAfter:
+				case <-timeout:
 					break loop
 				}
 			}
 
-			// Did we close? Were we expecting to close
-			if test.want.close && !didClose {
-				t.Errorf("expected out channel to close!")
-			} else if !test.want.close && didClose {
-				t.Errorf("did not expect out channel to close!")
+			// Expecting to close or stay open
+			if test.want.open != isOpen {
+				t.Errorf("%t = %t", test.want.open, isOpen)
 			}
 
-			// Compare outputs
+			// Expecting outputs
 			if !reflect.DeepEqual(test.want.out, outs) {
 				t.Errorf("%v != %v", test.want.out, outs)
 			}

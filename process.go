@@ -5,10 +5,10 @@ import "context"
 // Processor processes an input and reurns an output
 type Processor interface {
 	// Process processes an input and reurns an output
-	Process(i interface{}) interface{}
+	Process(i interface{}) (interface{}, error)
 
 	// Cancel is called if the context is canceled while the input is processing
-	Cancel(i interface{})
+	Cancel(i interface{}, err error)
 }
 
 // Process processes each input and returns a cooresponding output
@@ -19,7 +19,12 @@ func Process(ctx context.Context, p Processor, in <-chan interface{}) <-chan int
 		out := make(chan interface{})
 		go func() {
 			defer close(out)
-			out <- p.Process(i)
+			result, err := p.Process(i)
+			if err != nil {
+				p.Cancel(i, err)
+				return
+			}
+			out <- result
 		}()
 		return out
 	}
@@ -35,7 +40,7 @@ func Process(ctx context.Context, p Processor, in <-chan interface{}) <-chan int
 				}
 			// Cancel all inputs if the context is closed
 			case <-ctx.Done():
-				p.Cancel(i)
+				p.Cancel(i, ctx.Err())
 			}
 		}
 	}()

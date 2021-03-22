@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -9,35 +10,43 @@ import (
 
 // mockProcess is a mock of the Processor interface
 type mockProcessor struct {
-	processDuration time.Duration
-	cancelDuration  time.Duration
-	canceled        []interface{}
+	processDuration    time.Duration
+	processReturnsErrs bool
+	cancelDuration     time.Duration
+	canceled           []interface{}
+	canceledErrs       []string
 }
 
 // Process waits processDuration before returning its input at its output
-func (m *mockProcessor) Process(i interface{}) interface{} {
+func (m *mockProcessor) Process(i interface{}) (interface{}, error) {
 	time.Sleep(m.processDuration)
-	return i
+	if m.processReturnsErrs {
+		return nil, fmt.Errorf("process error: %d", i)
+	}
+	return i, nil
 }
 
 // Cancel collects all inputs that were canceled in m.canceled
-func (m *mockProcessor) Cancel(i interface{}) {
+func (m *mockProcessor) Cancel(i interface{}, err error) {
 	time.Sleep(m.cancelDuration)
 	m.canceled = append(m.canceled, i)
+	m.canceledErrs = append(m.canceledErrs, err.Error())
 }
 
 func TestProcess(t *testing.T) {
 	const maxTestDuration = time.Second
 	type args struct {
-		ctxTimeout      time.Duration
-		processDuration time.Duration
-		cancelDuration  time.Duration
-		in              []interface{}
+		ctxTimeout           time.Duration
+		processDuration      time.Duration
+		processReturnsErrors bool
+		cancelDuration       time.Duration
+		in                   []interface{}
 	}
 	type want struct {
-		open     bool
-		out      []interface{}
-		canceled []interface{}
+		open         bool
+		out          []interface{}
+		canceled     []interface{}
+		canceledErrs []string
 	}
 	tests := []struct {
 		name string
@@ -67,6 +76,13 @@ func TestProcess(t *testing.T) {
 				open:     false,
 				out:      []interface{}{1, 2, 3, 4, 5},
 				canceled: []interface{}{6, 7, 8, 9, 10},
+				canceledErrs: []string{
+					"context deadline exceeded",
+					"context deadline exceeded",
+					"context deadline exceeded",
+					"context deadline exceeded",
+					"context deadline exceeded",
+				},
 			},
 		}, {
 			name: "out stays open as long as in is open",
@@ -80,6 +96,28 @@ func TestProcess(t *testing.T) {
 				open:     true,
 				out:      []interface{}{1},
 				canceled: []interface{}{2},
+				canceledErrs: []string{
+					"context deadline exceeded",
+				},
+			},
+		}, {
+			name: "when an error is returned during process, it is passed to cancel",
+			args: args{
+				ctxTimeout:           maxTestDuration - 100*time.Millisecond,
+				processDuration:      (maxTestDuration - 200*time.Millisecond) / 2,
+				processReturnsErrors: true,
+				cancelDuration:       0,
+				in:                   []interface{}{1, 2, 3},
+			},
+			want: want{
+				open:     false,
+				out:      nil,
+				canceled: []interface{}{1, 2, 3},
+				canceledErrs: []string{
+					"process error: 1",
+					"process error: 2",
+					"context deadline exceeded",
+				},
 			},
 		},
 	}
@@ -98,8 +136,9 @@ func TestProcess(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), test.args.ctxTimeout)
 			defer cancel()
 			processor := &mockProcessor{
-				processDuration: test.args.processDuration,
-				cancelDuration:  test.args.cancelDuration,
+				processDuration:    test.args.processDuration,
+				processReturnsErrs: test.args.processReturnsErrors,
+				cancelDuration:     test.args.cancelDuration,
 			}
 			out := Process(ctx, processor, in)
 
@@ -135,6 +174,11 @@ func TestProcess(t *testing.T) {
 			// Expecting canceled inputs
 			if !reflect.DeepEqual(test.want.canceled, processor.canceled) {
 				t.Errorf("%+v != %+v", test.want.canceled, processor.canceled)
+			}
+
+			// Expecting canceled errors
+			if !reflect.DeepEqual(test.want.canceledErrs, processor.canceledErrs) {
+				t.Errorf("%+v != %+v", test.want.canceledErrs, processor.canceledErrs)
 			}
 		})
 	}

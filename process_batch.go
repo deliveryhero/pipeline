@@ -24,6 +24,7 @@ func ProcessBatch(
 			processor,
 			// 1. Collect slices of inputs from in
 			Collect(
+				ctx,
 				maxSize,
 				maxDuration,
 				in,

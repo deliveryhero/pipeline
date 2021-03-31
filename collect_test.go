@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 // 3. Collects max and returns immediately
 // 4. Returns everything passed in if less than max after duration
 // 5. After duration with nothing in the buffer, nothing is returned, channel remains open
+// 6. Flushes the buffer if the context is canceled
 func TestCollect(t *testing.T) {
 	const maxTestDuration = time.Second
 	type args struct {
@@ -19,6 +21,7 @@ func TestCollect(t *testing.T) {
 		maxDuration time.Duration
 		in          []interface{}
 		inDelay     time.Duration
+		ctxTimeout  time.Duration
 	}
 	type want struct {
 		out  []interface{}
@@ -35,6 +38,7 @@ func TestCollect(t *testing.T) {
 			maxDuration: maxTestDuration,
 			in:          nil,
 			inDelay:     0,
+			ctxTimeout:  maxTestDuration,
 		},
 		want: want{
 			out:  nil,
@@ -46,7 +50,8 @@ func TestCollect(t *testing.T) {
 			maxSize:     2,
 			maxDuration: maxTestDuration,
 			in:          []interface{}{1, 2, 3},
-			inDelay:     (maxTestDuration / 2) - (100 * time.Millisecond),
+			inDelay:     (maxTestDuration / 2) - (10 * time.Millisecond),
+			ctxTimeout:  maxTestDuration,
 		},
 		want: want{
 			out:  []interface{}{[]interface{}{1, 2}},
@@ -59,6 +64,7 @@ func TestCollect(t *testing.T) {
 			maxDuration: maxTestDuration / 10 * 9,
 			inDelay:     maxTestDuration / 10,
 			in:          []interface{}{1, 2, 3, 4, 5},
+			ctxTimeout:  maxTestDuration / 10 * 9,
 		},
 		want: want{
 			out: []interface{}{
@@ -75,6 +81,7 @@ func TestCollect(t *testing.T) {
 			maxDuration: maxTestDuration / 4,
 			inDelay:     (maxTestDuration / 4) - (10 * time.Millisecond),
 			in:          []interface{}{1, 2, 3, 4, 5},
+			ctxTimeout:  maxTestDuration / 4,
 		},
 		want: want{
 			out: []interface{}{
@@ -84,6 +91,25 @@ func TestCollect(t *testing.T) {
 				[]interface{}{4},
 			},
 			open: true,
+		},
+	}, {
+		name: "collection flushes buffer when the context is canceled",
+		args: args{
+			maxSize:     10,
+			maxDuration: maxTestDuration,
+			inDelay:     0,
+			in:          []interface{}{1, 2, 3, 4, 5},
+			ctxTimeout:  0,
+		},
+		want: want{
+			out: []interface{}{
+				[]interface{}{1},
+				[]interface{}{2},
+				[]interface{}{3},
+				[]interface{}{4},
+				[]interface{}{5},
+			},
+			open: false,
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
@@ -97,8 +123,12 @@ func TestCollect(t *testing.T) {
 				}
 			}()
 
+			// Create the context
+			ctx, cancel := context.WithTimeout(context.Background(), test.args.ctxTimeout)
+			defer cancel()
+
 			// Collect responses
-			collect := Collect(test.args.maxSize, test.args.maxDuration, in)
+			collect := Collect(ctx, test.args.maxSize, test.args.maxDuration, in)
 			timeout := time.After(maxTestDuration)
 			var outs []interface{}
 			var isOpen bool

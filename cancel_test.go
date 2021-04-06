@@ -10,7 +10,7 @@ import (
 func TestCancel(t *testing.T) {
 	type args struct {
 		ctx    context.Context
-		cancel func(i interface{})
+		cancel func(interface{}, error)
 		in     <-chan interface{}
 	}
 	tests := []struct {
@@ -42,8 +42,8 @@ func TestCancel(t *testing.T) {
 		}()
 
 		// Create a logger for the cancel fun
-		canceled := func(i interface{}) {
-			t.Logf("canceled: %d\n", i)
+		canceled := func(i interface{}, err error) {
+			t.Logf("canceled: %d because %s\n", i, err)
 		}
 
 		// Context times out after 1 second

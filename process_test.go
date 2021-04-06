@@ -18,8 +18,13 @@ type mockProcessor struct {
 }
 
 // Process waits processDuration before returning its input at its output
-func (m *mockProcessor) Process(i interface{}) (interface{}, error) {
-	time.Sleep(m.processDuration)
+func (m *mockProcessor) Process(ctx context.Context, i interface{}) (interface{}, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-time.After(m.processDuration):
+		break
+	}
 	if m.processReturnsErrs {
 		return nil, fmt.Errorf("process error: %d", i)
 	}

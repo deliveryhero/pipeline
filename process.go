@@ -7,7 +7,7 @@ type Processor interface {
 	// Process processes an input and reurns an output
 	Process(ctx context.Context, i interface{}) (interface{}, error)
 
-	// Cancel is called if process returns an error
+	// Cancel is called if process returns an error or if the context is canceled
 	Cancel(i interface{}, err error)
 }
 
@@ -18,12 +18,19 @@ func Process(ctx context.Context, p Processor, in <-chan interface{}) <-chan int
 		defer close(out)
 		// Start processing inputs until in closes
 		for i := range in {
-			result, err := p.Process(ctx, i)
-			if err != nil {
-				p.Cancel(i, err)
-				continue
+			select {
+			// When the context is canceled, Cancel all inputs
+			case <-ctx.Done():
+				p.Cancel(i, ctx.Err())
+			// Otherwise, Process all inputs
+			default:
+				result, err := p.Process(ctx, i)
+				if err != nil {
+					p.Cancel(i, err)
+					continue
+				}
+				out <- result
 			}
-			out <- result
 		}
 	}()
 	return out

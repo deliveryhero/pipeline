@@ -17,20 +17,6 @@ jobs:
       - name: Conventional Commits
         uses: aevea/commitsar@v0.15.0
 
-  goreadme:
-      runs-on: ubuntu-latest
-      steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
-      - name: Update readme according to Go doc
-        uses: posener/goreadme@v1
-        with:
-          badge-travisci: 'true'
-          badge-codecov: 'true'
-          badge-godoc: 'true'
-          badge-goreadme: 'true'
-          github-token: '${{ secrets.GITHUB_TOKEN }}'
-
   lint:
     runs-on: ubuntu-latest
     continue-on-error: true

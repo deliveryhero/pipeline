@@ -6,13 +6,13 @@ on:
       - main
 
 jobs:
-  conventional-commits:
+  version:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
 
-      - name: Increment Version + Generate Changelog
+      - name: Conventional Commits Versioning + Changelog
         id: changelog
         uses: TriPSs/conventional-changelog-action@v3
         with:
@@ -21,7 +21,7 @@ jobs:
           output-file: false
           skip-commit: true
       
-      - name: Create Release
+      - name: Tag + Release
         uses: actions/create-release@v1
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
@@ -30,3 +30,18 @@ jobs:
           tag_name: ${{ steps.changelog.outputs.tag }}
           release_name: ${{ steps.changelog.outputs.tag }}
           body: ${{ steps.changelog.outputs.clean_changelog }}
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Update readme according to Go doc
+      uses: posener/goreadme@v1
+      with:
+        email: 'marksalpeter@gmail.com'
+        badge-codecov: true
+        badge-godoc: true
+        badge-goreadme: true
+        badge-goreportcard: true
+        github-token: '${{ secrets.GITHUB_TOKEN }}'

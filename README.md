@@ -1,13 +1,9 @@
 # pipeline
 
-[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/master/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
-[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline)
-[![Go Report Card](https://goreportcard.com/badge/github.com/deliveryhero/pipeline)](https://goreportcard.com/report/github.com/deliveryhero/pipeline)
-
 Pipeline is a go library that helps you build piplines without worrying about channel management and concurrency.
 It contains common fan-in and fan-out operations as well as useful utility funcs for batch processing and scaling.
 
-If you have another common use case you would like to see covered by this package, please [open a feature request](https://github.com/deliveryhero/pipeline/issues/new?assignees=marksalpeter&labels=)⭐%!(NOVERB)EF%!(NOVERB)B8%!(NOVERB)F+enhancement&template=feature_request.md&title=⭐%!(NOVERB)EF%!(NOVERB)B8%!(NOVERB)F+.
+If you have another common use case you would like to see covered by this package, please [open a feature request](https://github.com/deliveryhero/pipeline/issues).
 
 ## Functions
 
@@ -131,24 +127,10 @@ package main
 import (
 	"context"
 	"github.com/deliveryhero/pipeline"
+	"github.com/deliveryhero/pipeline/example/processors"
 	"log"
 	"time"
 )
-
-// Miltiplier is a simple processor that multiplies integers by some Factor
-type Multiplier struct {
-	Factor int
-}
-
-// Process multiplies a number by factor
-func (m *Multiplier) Process(_ context.Context, in interface{}) (interface{}, error) {
-	return in.(int) * m.Factor, nil
-}
-
-// Cancel is called when the context is cancelled
-func (m *Multiplier) Cancel(i interface{}, err error) {
-	log.Printf("error: could not multiply %d, %s\n", i, err)
-}
 
 func main() {
 	// Create a context that times out after 5 seconds
@@ -159,7 +141,7 @@ func main() {
 	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
 	// Use the Multipleir to multiply each int by 10
-	p = pipeline.Process(ctx, &Multiplier{
+	p = pipeline.Process(ctx, &processors.Multiplier{
 		Factor: 10,
 	}, p)
 
@@ -193,6 +175,42 @@ ProcessBatch collects up to maxSize elements over maxDuration and processes them
 It passed an []interface{} to the `Processor.Process` method and expects a []interface{} back.
 It passes []interface{} batches of inputs to the `Processor.Cancel` method.
 If the receiver is backed up, ProcessBatch can holds up to 2x maxSize.
+
+```golang
+package main
+
+import (
+	"context"
+	"github.com/deliveryhero/pipeline"
+	"github.com/deliveryhero/pipeline/example/processors"
+	"log"
+	"time"
+)
+
+func main() {
+	// Create a context that times out after 5 seconds
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Create a pipeline that emits 1-6 at a rate of one int per second
+	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
+
+	// Use the BatchMultipleir to multiply 2 adjacent numbers together
+	p = pipeline.ProcessBatch(ctx, 2, time.Minute, &processors.BatchMultiplier{}, p)
+
+	// Finally, lets print the results and see what happened
+	for result := range p {
+		log.Printf("result: %d\n", result)
+	}
+
+	// Output
+	// result: 2
+	// result: 12
+	// error: could not multiply [5], context deadline exceeded
+	// error: could not multiply [6], context deadline exceeded
+}
+
+```
 
 ### func [ProcessBatchConcurrently](/process_concurrently.go#L20)
 

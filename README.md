@@ -112,7 +112,7 @@ func main() {
 
 ```
 
-### func [Process](/process.go#L21)
+### func [Process](/process.go#L9)
 
 `func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-chan interface{}`
 

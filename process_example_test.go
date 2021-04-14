@@ -40,7 +40,7 @@ func ExampleProcess() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Create a pipeline that emits 1-6 at one int per second
+	// Create a pipeline that emits 1-6 at a rate of one int per second
 	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
 	// Use the Multipleir to multiply each int by 10

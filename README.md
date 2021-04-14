@@ -4,18 +4,19 @@
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline)
 [![Go Report Card](https://goreportcard.com/badge/github.com/deliveryhero/pipeline)](https://goreportcard.com/report/github.com/deliveryhero/pipeline)
 
-Pipeline is a go library for helping you build piplines without worrying about channel management and concurrency.
-It contains common fan-in and fan-out operations as well as useful `func`s for batch processing and concurrency.
-If you have another common use case you would like to see covered, please [open an issue](https://github.com/deliveryhero/pipeline/issues).
+Pipeline is a go library that helps you build piplines without worrying about channel management and concurrency.
+It contains common fan-in and fan-out operations as well as useful utility funcs for batch processing and scaling.
+
+If you have another common use case you would like to see covered by this package, please [open a feature request](https://github.com/deliveryhero/pipeline/issues/new?assignees=marksalpeter&labels=)⭐%!(NOVERB)EF%!(NOVERB)B8%!(NOVERB)F+enhancement&template=feature_request.md&title=⭐%!(NOVERB)EF%!(NOVERB)B8%!(NOVERB)F+.
 
 ## Functions
 
-### func [Cancel](/cancel.go#L7)
+### func [Cancel](/cancel.go#L9)
 
 `func Cancel(ctx context.Context, cancel func(interface{}, error), in <-chan interface{}) <-chan interface{}`
 
-Cacel passes `interface{}`s from the in chan to the out chan until the context is canceled.
-When the context is canceled, everything from in is intercepted by the `cancel` func instead of being passed to the out chan.
+Cacel passes an `interface{}` from the `in <-chan interface{}` directly to the out `<-chan interface{}` until the `Context` is canceled.
+After the context is canceled, everything from `in <-chan interface{}` is sent to the `cancel` func instead with the `ctx.Err()`.
 
 ### func [Collect](/collect.go#L13)
 
@@ -45,6 +46,75 @@ Emit fans `is ...interface{}`` out to a `<-chan interface{}`
 `func Merge(ins ...<-chan interface{}) <-chan interface{}`
 
 Merge fans multiple channels in to a single channel
+
+```golang
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"github.com/deliveryhero/pipeline"
+	"github.com/deliveryhero/pipeline/example/db"
+)
+
+// SearchResults returns many types of search results at once
+type SearchResults struct {
+	Advertisements []db.Result `json:"advertisements"`
+	Images         []db.Result `json:"images"`
+	Products       []db.Result `json:"products"`
+	Websites       []db.Result `json:"websites"`
+}
+
+func main() {
+	r := http.NewServeMux()
+
+	// `GET /search?q=<query>` is an endpoint that merges concurrently fetched
+	// search results into a single search response using `pipeline.Merge`
+	r.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("q")
+		if len(query) < 1 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// If the request times out, or we receive an error from our `db`
+		// the context will stop all pending db queries for this request
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+
+		// Fetch all of the different search results concurrently
+		var results SearchResults
+		for err := range pipeline.Merge(
+			db.GetAdvertisements(ctx, query, &results.Advertisements),
+			db.GetImages(ctx, query, &results.Images),
+			db.GetProducts(ctx, query, &results.Products),
+			db.GetWebsites(ctx, query, &results.Websites),
+		) {
+			// Stop all pending db requests if theres an error
+			if err != nil {
+				log.Print(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Return the search results
+		if bs, err := json.Marshal(&results); err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else if _, err := w.Write(bs); err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	})
+}
+
+```
 
 ### func [Process](/process.go#L21)
 

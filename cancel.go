@@ -1,9 +1,11 @@
 package pipeline
 
-import "context"
+import (
+	"context"
+)
 
-// Cacel passes `interface{}`s from the in chan to the out chan until the context is canceled.
-// When the context is canceled, everything from in is intercepted by the `cancel` func instead of being passed to the out chan.
+// Cacel passes an `interface{}` from the `in <-chan interface{}` directly to the out `<-chan interface{}` until the `Context` is canceled.
+// After the context is canceled, everything from `in <-chan interface{}` is sent to the `cancel` func instead with the `ctx.Err()`.
 func Cancel(ctx context.Context, cancel func(interface{}, error), in <-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {

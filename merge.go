@@ -5,7 +5,6 @@ import "sync"
 // Merge fans multiple channels in to a single channel
 func Merge(ins ...<-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
-
 	// Create a WaitGroup that waits for all of the ins to close
 	var wg sync.WaitGroup
 	wg.Add(len(ins))
@@ -14,7 +13,6 @@ func Merge(ins ...<-chan interface{}) <-chan interface{} {
 		wg.Wait()
 		close(out)
 	}()
-
 	for i := range ins {
 		go func(in <-chan interface{}) {
 			// Wait for each in to close
@@ -28,6 +26,5 @@ func Merge(ins ...<-chan interface{}) <-chan interface{} {
 			wg.Done()
 		}(ins[i])
 	}
-
 	return out
 }

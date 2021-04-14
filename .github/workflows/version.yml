@@ -40,10 +40,10 @@ jobs:
       uses: posener/goreadme@v1
       with:
         email: 'marksalpeter@gmail.com'
-        badge-codecov: true
-        badge-godoc: true
-        badge-goreadme: true
-        badge-goreportcard: true
+        badge-codecov: false
+        badge-godoc: false
+        badge-goreadme: false
+        badge-goreportcard: false
         types: true
         functions: true
         github-token: '${{ secrets.GITHUB_TOKEN }}'

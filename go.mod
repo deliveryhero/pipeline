@@ -1,3 +1,3 @@
-module github.com/marksalpeter/util
+module github.com/deliveryhero/pipeline
 
 go 1.16

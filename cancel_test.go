@@ -1,57 +1,75 @@
-package util
+package pipeline
 
 import (
 	"context"
-	"reflect"
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestCancel(t *testing.T) {
-	type args struct {
-		ctx    context.Context
-		cancel func(interface{}, error)
-		in     <-chan interface{}
-	}
-	tests := []struct {
-		name string
-		args args
-		want <-chan interface{}
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Cancel(tt.args.ctx, tt.args.cancel, tt.args.in); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Cancel() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-	t.Run("in never closes", func(t *testing.T) {
-		// In closes after the context
-		in := make(chan interface{})
-		go func() {
-			defer close(in)
-			i := 0
-			endAt := time.Now().Add(10 * time.Millisecond)
-			for now := time.Now(); now.Before(endAt); now = time.Now() {
-				in <- i
-				i++
-			}
-			t.Log("ended")
-		}()
+	const testDuration = time.Millisecond
 
-		// Create a logger for the cancel fun
-		canceled := func(i interface{}, err error) {
-			t.Logf("canceled: %d because %s\n", i, err)
+	// Collect logs
+	var logs []string
+	logf := func(v string, is ...interface{}) {
+		logs = append(logs, fmt.Sprintf(v, is...))
+	}
+
+	// Send a stream of ints through the in chan
+	in := make(chan interface{})
+	go func() {
+		defer close(in)
+		i := 0
+		endAt := time.Now().Add(testDuration)
+		for now := time.Now(); now.Before(endAt); now = time.Now() {
+			in <- i
+			i++
+			time.Sleep(testDuration / 100)
 		}
+		logf("ended")
+	}()
 
-		// Context times out after 1 second
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-		defer cancel()
-		for o := range Cancel(ctx, canceled, in) {
-			t.Logf("out: %d", o)
+	// Create a logger for the cancel func
+	canceled := func(i interface{}, err error) {
+		logf("canceled: %d because %s\n", i, err)
+	}
+
+	// Start canceling the pipeline about half way through the test
+	ctx, cancel := context.WithTimeout(context.Background(), testDuration/2)
+	defer cancel()
+	for o := range Cancel(ctx, canceled, in) {
+		logf("%d", o)
+	}
+
+	// There should be some logs
+	lenLogs := len(logs)
+	if lenLogs < 2 {
+		t.Errorf("len(logs) = %d, wanted > 2", lenLogs)
+		t.Log(logs)
+		return
+	}
+
+	// The first half of the logs (+-5%) should be a string representation of the numbers in order
+	var iCanceled int
+	for i, log := range logs {
+		if strconv.Itoa(i) != log {
+			iCanceled = i
+			if isAboutHalfWay := math.Abs(float64((lenLogs/2)-i)) <= .1*float64(lenLogs); isAboutHalfWay {
+				break
+			}
+			t.Errorf("got %d, wanted %s", i, log)
 		}
+	}
 
-	})
+	// The remaining logs should be prefixed with "canceled:"
+	for i, log := range logs[iCanceled : lenLogs-1] {
+		if !strings.Contains(log, "canceled:") {
+			t.Errorf("got '%s', wanted 'canceled: %d because context deadline exceeded'", log, i+lenLogs/2)
+		}
+	}
+
 }

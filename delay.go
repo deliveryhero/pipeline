@@ -1,12 +1,12 @@
-package util
+package pipeline
 
 import (
 	"context"
 	"time"
 )
 
-// Delay delays reading each input by duration.
-// If the context is canceled the delay will not be applied.
+// Delay delays reading each input by `duration`.
+// If the context is canceled, the delay will not be applied.
 func Delay(ctx context.Context, duration time.Duration, in <-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {

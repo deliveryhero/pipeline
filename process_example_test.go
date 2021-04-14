@@ -1,11 +1,11 @@
-package util_test
+package pipeline_test
 
 import (
 	"context"
 	"log"
 	"time"
 
-	"github.com/marksalpeter/util"
+	"github.com/deliveryhero/pipeline"
 )
 
 // Miltiplier is a simple processor that multiplies integers by some Factor
@@ -41,10 +41,10 @@ func ExampleProcess() {
 	defer cancel()
 
 	// Create a pipeline that emits 1-6 at one int per second
-	p := util.Delay(ctx, time.Second, util.Emit(1, 2, 3, 4, 5, 6))
+	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
 	// Use the Multipleir to multiply each int by 10
-	p = util.Process(ctx, &Multiplier{
+	p = pipeline.Process(ctx, &Multiplier{
 		Factor: 10,
 	}, p)
 

@@ -1,15 +1,15 @@
-package util
+package pipeline
 
 import (
 	"context"
 	"time"
 )
 
-// Collect collects up to maxSize inputs over up to maxDuration before returning them as []interface{}.
-// If maxSize is reached before maxDuration, [maxSize]interface{} will be returned.
-// If maxDuration is reached before maxSize is collected, [>maxSize]interface{} will be returned.
-// If no inputs are collected over maxDuration, no outputs will be returned.
-// If the context is closed, everything in the buffer will be immediately flushed and there will be no delay for any remaining messages
+// Collect collects `interface{}`s from its in channel and returns `[]interface{}` from its out channel.
+// It will collet up to `maxSize` inputs from the `in <-chan interface{}` over up to `maxDuration` before returning them as `[]interface{}`.
+// That means when `maxSize` is reached before `maxDuration`, `[maxSize]interface{}` will be passed to the out channel.
+// But if `maxDuration` is reached before `maxSize` inputs are collected, `[< maxSize]interface{}` will be passed to the out channel.
+// When the `context` is canceled, everything in the buffer will be flushed to the out channel.
 func Collect(ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {

@@ -1,11 +1,10 @@
-package util
+package pipeline
 
 import "context"
 
-// Cacel passes the in chan to the out chan until the context is canceled.
-// When the context is canceled, everything from in is passed to the cancel func instead of out.
-// Out closes when in is closed.
-func Cancel(ctx context.Context, canceled func(interface{}, error), in <-chan interface{}) <-chan interface{} {
+// Cacel passes `interface{}`s from the in chan to the out chan until the context is canceled.
+// When the context is canceled, everything from in is intercepted by the `cancel` func instead of being passed to the out chan.
+func Cancel(ctx context.Context, cancel func(interface{}, error), in <-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {
 		defer close(out)
@@ -22,7 +21,7 @@ func Cancel(ctx context.Context, canceled func(interface{}, error), in <-chan in
 			// cancel fun until in is closed
 			case <-ctx.Done():
 				for i := range in {
-					canceled(i, ctx.Err())
+					cancel(i, ctx.Err())
 				}
 				return
 			}

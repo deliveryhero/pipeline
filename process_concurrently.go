@@ -1,4 +1,4 @@
-package util
+package pipeline
 
 import (
 	"context"
@@ -22,12 +22,12 @@ func ProcessBatchConcurrently(
 	concurrently,
 	maxSize int,
 	maxDuration time.Duration,
-	processor Processor,
+	p Processor,
 	in <-chan interface{},
 ) <-chan interface{} {
 	var outs []<-chan interface{}
 	for i := 0; i < concurrently; i++ {
-		outs = append(outs, ProcessBatch(ctx, maxSize, maxDuration, processor, in))
+		outs = append(outs, ProcessBatch(ctx, maxSize, maxDuration, p, in))
 	}
 	return Merge(outs...)
 }

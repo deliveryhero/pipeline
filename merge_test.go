@@ -1,12 +1,10 @@
-package util_test
+package pipeline
 
 import (
 	"errors"
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/marksalpeter/util"
 )
 
 // task will wait for a specified duration of time before returning a certian number of errors
@@ -108,7 +106,7 @@ func TestMerge(t *testing.T) {
 
 			// Merge all of their error channels together
 			var errs []error
-			merged := util.Merge(errChans...)
+			merged := Merge(errChans...)
 
 			// Create the timeout
 			timeout := time.After(maxTestDuration)

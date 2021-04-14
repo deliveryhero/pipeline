@@ -1,4 +1,4 @@
-package util
+package pipeline
 
 // Split takes an interface from Collect and splits it back out into individual elements
 // Usefull for batch processing pipelines (`intput chan -> Collect -> Process -> Split -> Cancel -> output chan`).

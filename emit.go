@@ -1,6 +1,6 @@
-package util
+package pipeline
 
-// Emit fans is out into a channel
+// Emit fans `is ...interface{}`` out to a `<-chan interface{}`
 func Emit(is ...interface{}) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {

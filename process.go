@@ -1,10 +1,10 @@
-package util
+package pipeline
 
 import "context"
 
-// Processor represents a blocking operation in a pipeline. Implementing processors will allow you to add
-// business logic to your pipelines without directly managing channels. This will simplify your unit tests
-// and eliminate channel management related bugs.
+// Processor represents a blocking operation in a pipeline. Implementing `Processor` will allow you to add
+// business logic to your pipelines without directly managing channels. This simplifies your unit tests
+// and eliminates channel management related bugs.
 type Processor interface {
 	// Process processes an input and reurns an output or an error, if the output could not be processed.
 	// When the context is canceled, process should stop all blocking operations and return the `Context.Err()`.

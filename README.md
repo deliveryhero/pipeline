@@ -1,5 +1,7 @@
 # pipeline
 
+[![Build Status](https://travis-ci.org/deliveryhero/pipeline.svg?branch=master)](https://travis-ci.org/deliveryhero/pipeline)
+
 Pipeline is a go library that helps you build piplines without worrying about channel management and concurrency.
 It contains common fan-in and fan-out operations as well as useful utility funcs for batch processing and scaling.
 
@@ -11,7 +13,7 @@ If you have another common use case you would like to see covered by this packag
 
 `func Cancel(ctx context.Context, cancel func(interface{}, error), in <-chan interface{}) <-chan interface{}`
 
-Cacel passes an `interface{}` from the `in <-chan interface{}` directly to the out `<-chan interface{}` until the `Context` is canceled.
+Cancel passes an `interface{}` from the `in <-chan interface{}` directly to the out `<-chan interface{}` until the `Context` is canceled.
 After the context is canceled, everything from `in <-chan interface{}` is sent to the `cancel` func instead with the `ctx.Err()`.
 
 ### func [Collect](/collect.go#L13)
@@ -118,8 +120,8 @@ func main() {
 
 Process takes each input from the `in <-chan interface{}` and calls `Processor.Process` on it.
 When `Processor.Process` returns an `interface{}`, it will be sent to the output `<-chan interface{}`.
-If `Processor.Process` returns an error, `Processor.Cancel` will be called with the cooresponding input and error message.
-Finally, if the `Context` is cancelled, all inputs remaining in the `in <-chan interface{}` will go directly to `Processor.Cancel`.
+If `Processor.Process` returns an error, `Processor.Cancel` will be called with the corresponding input and error message.
+Finally, if the `Context` is canceled, all inputs remaining in the `in <-chan interface{}` will go directly to `Processor.Cancel`.
 
 ```golang
 package main
@@ -238,7 +240,7 @@ then it fans the out channles of the Processors back into a single out chan
 `func Split(in <-chan interface{}) <-chan interface{}`
 
 Split takes an interface from Collect and splits it back out into individual elements
-Usefull for batch processing pipelines (`intput chan -> Collect -> Process -> Split -> Cancel -> output chan`).
+Useful for batch processing pipelines (`intput chan -> Collect -> Process -> Split -> Cancel -> output chan`).
 
 ---
 Readme created from Go doc with [goreadme](https://github.com/posener/goreadme)

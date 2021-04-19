@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// task will wait for a specified duration of time before returning a certian number of errors
+// task will wait for a specified duration of time before returning a certain number of errors
 type task struct {
 	id         string
 	errorCount int

@@ -17,7 +17,7 @@ func (m *Multiplier) Process(_ context.Context, in interface{}) (interface{}, er
 	return in.(int) * m.Factor, nil
 }
 
-// Cancel is called when the context is cancelled
+// Cancel is called when the context is canceled
 func (m *Multiplier) Cancel(i interface{}, err error) {
 	log.Printf("error: could not multiply %d, %s\n", i, err)
 }
@@ -34,7 +34,7 @@ func (m *BatchMultiplier) Process(_ context.Context, ins interface{}) (interface
 	return []interface{}{result}, nil
 }
 
-// Cancel is called when the context is cancelled
+// Cancel is called when the context is canceled
 func (m *BatchMultiplier) Cancel(i interface{}, err error) {
 	log.Printf("error: could not multiply %+v, %s\n", i, err)
 }

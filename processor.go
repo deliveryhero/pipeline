@@ -6,7 +6,7 @@ import "context"
 // business logic to your pipelines without directly managing channels. This simplifies your unit tests
 // and eliminates channel management related bugs.
 type Processor interface {
-	// Process processes an input and reurns an output or an error, if the output could not be processed.
+	// Process processes an input and returns an output or an error, if the output could not be processed.
 	// When the context is canceled, process should stop all blocking operations and return the `Context.Err()`.
 	Process(ctx context.Context, i interface{}) (interface{}, error)
 
@@ -14,8 +14,8 @@ type Processor interface {
 	Cancel(i interface{}, err error)
 }
 
-// NewProcesssor creates a process and cancel func
-func NewProcesssor(
+// NewProcessor creates a process and cancel func
+func NewProcessor(
 	process func(ctx context.Context, i interface{}) (interface{}, error),
 	cancel func(i interface{}, err error),
 ) Processor {

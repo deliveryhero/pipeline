@@ -17,7 +17,7 @@ func ExampleProcess() {
 	// Create a pipeline that emits 1-6 at a rate of one int per second
 	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
-	// Use the Multipleir to multiply each int by 10
+	// Use the Multiplier to multiply each int by 10
 	p = pipeline.Process(ctx, &processors.Multiplier{
 		Factor: 10,
 	}, p)

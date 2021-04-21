@@ -6,7 +6,7 @@ import (
 )
 
 // Collect collects `interface{}`s from its in channel and returns `[]interface{}` from its out channel.
-// It will collet up to `maxSize` inputs from the `in <-chan interface{}` over up to `maxDuration` before returning them as `[]interface{}`.
+// It will collect up to `maxSize` inputs from the `in <-chan interface{}` over up to `maxDuration` before returning them as `[]interface{}`.
 // That means when `maxSize` is reached before `maxDuration`, `[maxSize]interface{}` will be passed to the out channel.
 // But if `maxDuration` is reached before `maxSize` inputs are collected, `[< maxSize]interface{}` will be passed to the out channel.
 // When the `context` is canceled, everything in the buffer will be flushed to the out channel.

@@ -17,7 +17,7 @@ func ExampleProcessBatch() {
 	// Create a pipeline that emits 1-6 at a rate of one int per second
 	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
-	// Use the BatchMultipleir to multiply 2 adjacent numbers together
+	// Use the BatchMultiplier to multiply 2 adjacent numbers together
 	p = pipeline.ProcessBatch(ctx, 2, time.Minute, &processors.BatchMultiplier{}, p)
 
 	// Finally, lets print the results and see what happened

@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// ProcessConcurrently fans the in channel out to multple Processors running concurrently,
-// then it fans the out channles of the Processors back into a single out chan
+// ProcessConcurrently fans the in channel out to multiple Processors running concurrently,
+// then it fans the out channels of the Processors back into a single out chan
 func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in <-chan interface{}) <-chan interface{} {
 	var outs []<-chan interface{}
 	for i := 0; i < concurrently; i++ {
@@ -15,8 +15,8 @@ func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in 
 	return Merge(outs...)
 }
 
-// ProcessBatchConcurrently fans the in channel out to multple batch Processors running concurrently,
-// then it fans the out channles of the batch Processors back into a single out chan
+// ProcessBatchConcurrently fans the in channel out to multiple batch Processors running concurrently,
+// then it fans the out channels of the batch Processors back into a single out chan
 func ProcessBatchConcurrently(
 	ctx context.Context,
 	concurrently,

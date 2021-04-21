@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/deliveryhero/pipeline.svg?branch=master)](https://travis-ci.org/deliveryhero/pipeline)
 
-Pipeline is a go library that helps you build piplines without worrying about channel management and concurrency.
+Pipeline is a go library that helps you build pipelines without worrying about channel management and concurrency.
 It contains common fan-in and fan-out operations as well as useful utility funcs for batch processing and scaling.
 
 If you have another common use case you would like to see covered by this package, please [open a feature request](https://github.com/deliveryhero/pipeline/issues).
@@ -61,7 +61,7 @@ func main() {
 `func Collect(ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan interface{}) <-chan interface{}`
 
 Collect collects `interface{}`s from its in channel and returns `[]interface{}` from its out channel.
-It will collet up to `maxSize` inputs from the `in <-chan interface{}` over up to `maxDuration` before returning them as `[]interface{}`.
+It will collect up to `maxSize` inputs from the `in <-chan interface{}` over up to `maxDuration` before returning them as `[]interface{}`.
 That means when `maxSize` is reached before `maxDuration`, `[maxSize]interface{}` will be passed to the out channel.
 But if `maxDuration` is reached before `maxSize` inputs are collected, `[< maxSize]interface{}` will be passed to the out channel.
 When the `context` is canceled, everything in the buffer will be flushed to the out channel.
@@ -182,7 +182,7 @@ func main() {
 	// Create a pipeline that emits 1-6 at a rate of one int per second
 	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
-	// Use the Multipleir to multiply each int by 10
+	// Use the Multiplier to multiply each int by 10
 	p = pipeline.Process(ctx, &processors.Multiplier{
 		Factor: 10,
 	}, p)
@@ -237,7 +237,7 @@ func main() {
 	// Create a pipeline that emits 1-6 at a rate of one int per second
 	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
-	// Use the BatchMultipleir to multiply 2 adjacent numbers together
+	// Use the BatchMultiplier to multiply 2 adjacent numbers together
 	p = pipeline.ProcessBatch(ctx, 2, time.Minute, &processors.BatchMultiplier{}, p)
 
 	// Finally, lets print the results and see what happened
@@ -265,22 +265,22 @@ func main() {
     in <-chan interface{},
 ) <-chan interface{}`
 
-ProcessBatchConcurrently fans the in channel out to multple batch Processors running concurrently,
-then it fans the out channles of the batch Processors back into a single out chan
+ProcessBatchConcurrently fans the in channel out to multiple batch Processors running concurrently,
+then it fans the out channels of the batch Processors back into a single out chan
 
 ### func [ProcessConcurrently](/process_concurrently.go#L10)
 
 `func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in <-chan interface{}) <-chan interface{}`
 
-ProcessConcurrently fans the in channel out to multple Processors running concurrently,
-then it fans the out channles of the Processors back into a single out chan
+ProcessConcurrently fans the in channel out to multiple Processors running concurrently,
+then it fans the out channels of the Processors back into a single out chan
 
 ### func [Split](/split.go#L5)
 
 `func Split(in <-chan interface{}) <-chan interface{}`
 
 Split takes an interface from Collect and splits it back out into individual elements
-Useful for batch processing pipelines (`intput chan -> Collect -> Process -> Split -> Cancel -> output chan`).
+Useful for batch processing pipelines (`input chan -> Collect -> Process -> Split -> Cancel -> output chan`).
 
 ---
 Readme created from Go doc with [goreadme](https://github.com/posener/goreadme)

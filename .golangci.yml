@@ -6,6 +6,7 @@ linters:
     - govet
     - misspell
     - deadcode
+    - gosec
 linters-settings:
   misspell:
     locale: US

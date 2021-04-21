@@ -65,11 +65,11 @@ func simulatedDbRequest(ctx context.Context, resultPrefix string, rs *[]Result) 
 	case <-ctx.Done():
 		return ctx.Err()
 	// Simulate 25-200ms of latency from a db request
-	case <-time.After(time.Millisecond * time.Duration((25 + (rand.Int() % 175)))):
+	case <-time.After(time.Millisecond * time.Duration((25 + (rand.Int() % 175)))): // #nosec
 		break
 	}
 	// Return between 1 and 5 results
-	total := 1 + (rand.Int() % 5)
+	total := 1 + (rand.Int() % 5) // #nosec
 	for i := 0; i < total; i++ {
 		*rs = append(*rs, Result{
 			Title:       fmt.Sprintf("%s %d title", resultPrefix, i),

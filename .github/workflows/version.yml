@@ -40,7 +40,7 @@ jobs:
       uses: posener/goreadme@v1
       with:
         email: 'marksalpeter@gmail.com'
-        badge-codecov: true
+        badge-codecov: false
         badge-godoc: true
         badge-goreadme: false
         badge-goreportcard: true

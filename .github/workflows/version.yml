@@ -44,7 +44,7 @@ jobs:
         badge-godoc: true
         badge-goreadme: false
         badge-goreportcard: true
-        badge-travisci: false
+        badge-travisci: true
         types: true
         functions: true
         github-token: '${{ secrets.GITHUB_TOKEN }}'

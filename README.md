@@ -1,7 +1,6 @@
 # pipeline
 
 [![Build Status](https://travis-ci.org/deliveryhero/pipeline.svg?branch=master)](https://travis-ci.org/deliveryhero/pipeline)
-[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/master/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline)
 [![Go Report Card](https://goreportcard.com/badge/github.com/deliveryhero/pipeline)](https://goreportcard.com/report/github.com/deliveryhero/pipeline)
 

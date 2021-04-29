@@ -103,11 +103,7 @@ func TestCollect(t *testing.T) {
 		},
 		want: want{
 			out: []interface{}{
-				[]interface{}{1},
-				[]interface{}{2},
-				[]interface{}{3},
-				[]interface{}{4},
-				[]interface{}{5},
+				[]interface{}{1, 2, 3, 4, 5},
 			},
 			open: false,
 		},
@@ -149,12 +145,12 @@ func TestCollect(t *testing.T) {
 
 			// Expecting to close or stay open
 			if test.want.open != isOpen {
-				t.Errorf("%t = %t", test.want.open, isOpen)
+				t.Errorf("open = %t, want %t", isOpen, test.want.open)
 			}
 
 			// Expecting outputs
 			if !reflect.DeepEqual(test.want.out, outs) {
-				t.Errorf("%v != %v", test.want.out, outs)
+				t.Errorf("out = %v, want %v", outs, test.want.out)
 			}
 
 		})

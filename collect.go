@@ -13,43 +13,42 @@ import (
 func Collect(ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {
-		defer close(out)
-		var buffer []interface{}
-		timeout := time.After(maxDuration)
 		for {
-			lenBuffer := len(buffer)
-			select {
-			case <-ctx.Done():
-				if lenBuffer > 0 {
-					out <- buffer
-					buffer = nil
-				}
-				timeout = nil
-			case i, open := <-in:
-				if !open && lenBuffer > 0 {
-					// We have some interfaces left to to return when in is closed
-					out <- buffer
-					return
-				} else if !open {
-					return
-				} else if lenBuffer < maxSize-1 {
-					// There is still room in the buffer
-					buffer = append(buffer, i)
-				} else {
-					// There is no room left in the buffer
-					out <- append(buffer, i)
-					buffer = nil
-					timeout = time.After(maxDuration)
-				}
-			case <-timeout:
-				if lenBuffer > 0 {
-					// We timed out with some items left in the buffer
-					out <- buffer
-					buffer = nil
-				}
-				timeout = time.After(maxDuration)
+			is, open := collect(ctx, maxSize, maxDuration, in)
+			if is != nil {
+				out <- is
+			}
+			if !open {
+				close(out)
+				return
 			}
 		}
 	}()
 	return out
+}
+
+func collect(ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan interface{}) ([]interface{}, bool) {
+	var buffer []interface{}
+	timeout := time.After(maxDuration)
+	for {
+		lenBuffer := len(buffer)
+		select {
+		case <-ctx.Done():
+			// Reduce the timeout to 1/10th of a second
+			bs, open := collect(context.Background(), maxSize, 100*time.Millisecond, in)
+			return append(buffer, bs...), open
+		case <-timeout:
+			return buffer, true
+		case i, open := <-in:
+			if !open {
+				return buffer, false
+			} else if lenBuffer < maxSize-1 {
+				// There is still room in the buffer
+				buffer = append(buffer, i)
+			} else {
+				// There is no room left in the buffer
+				return append(buffer, i), true
+			}
+		}
+	}
 }

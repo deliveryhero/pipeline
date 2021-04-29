@@ -3,7 +3,9 @@ package processors
 
 import (
 	"context"
+	"errors"
 	"log"
+	"time"
 )
 
 // Miltiplier is a simple processor that multiplies each integer it receives by some Factor
@@ -37,4 +39,24 @@ func (m *BatchMultiplier) Process(_ context.Context, ins interface{}) (interface
 // Cancel is called when the context is canceled
 func (m *BatchMultiplier) Cancel(i interface{}, err error) {
 	log.Printf("error: could not multiply %+v, %s\n", i, err)
+}
+
+// Waiter is a Processor that waits for Duration before returning its output
+type Waiter struct {
+	Duration time.Duration
+}
+
+// Process waits for `Waiter.Duration` before returning the value passed in
+func (w *Waiter) Process(ctx context.Context, in interface{}) (interface{}, error) {
+	select {
+	case <-time.After(w.Duration):
+		return in, nil
+	case <-ctx.Done():
+		return nil, errors.New("process was canceled")
+	}
+}
+
+// Cancel is called when the context is canceled
+func (w *Waiter) Cancel(i interface{}, err error) {
+	log.Printf("error: could not process %+v, %s\n", i, err)
 }

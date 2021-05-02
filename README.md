@@ -157,7 +157,7 @@ func main() {
 
 ```
 
-### func [Process](/process.go#L9)
+### func [Process](/process.go#L12)
 
 `func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-chan interface{}`
 
@@ -206,7 +206,7 @@ func main() {
 
 ```
 
-### func [ProcessBatch](/process_batch.go#L12)
+### func [ProcessBatch](/process_batch.go#L13)
 
 `func ProcessBatch(
     ctx context.Context,
@@ -257,26 +257,110 @@ func main() {
 
 ```
 
-### func [ProcessBatchConcurrently](/process_concurrently.go#L20)
+### func [ProcessBatchConcurrently](/process_batch.go#L30)
 
 `func ProcessBatchConcurrently(
     ctx context.Context,
     concurrently,
     maxSize int,
     maxDuration time.Duration,
-    p Processor,
+    processor Processor,
     in <-chan interface{},
 ) <-chan interface{}`
 
 ProcessBatchConcurrently fans the in channel out to multiple batch Processors running concurrently,
 then it fans the out channels of the batch Processors back into a single out chan
 
-### func [ProcessConcurrently](/process_concurrently.go#L10)
+```golang
+package main
+
+import (
+	"context"
+	"github.com/deliveryhero/pipeline"
+	"github.com/deliveryhero/pipeline/example/processors"
+	"log"
+	"time"
+)
+
+func main() {
+	// Create a context that times out after 5 seconds
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Create a pipeline that emits 1-9
+	p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+	// Wait 4 seconds to pass 2 numbers through the pipe
+	// * 2 concurrent Processors
+	p = pipeline.ProcessBatchConcurrently(ctx, 2, 2, time.Minute, &processors.Waiter{
+		Duration: 4 * time.Second,
+	}, p)
+
+	// Finally, lets print the results and see what happened
+	for result := range p {
+		log.Printf("result: %d\n", result)
+	}
+
+	// Output
+	// result: 3
+	// result: 4
+	// result: 1
+	// result: 2
+	// error: could not process [5 6], process was canceled
+	// error: could not process [7 8], process was canceled
+	// error: could not process [9], context deadline exceeded
+}
+
+```
+
+### func [ProcessConcurrently](/process.go#L23)
 
 `func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in <-chan interface{}) <-chan interface{}`
 
 ProcessConcurrently fans the in channel out to multiple Processors running concurrently,
 then it fans the out channels of the Processors back into a single out chan
+
+```golang
+package main
+
+import (
+	"context"
+	"github.com/deliveryhero/pipeline"
+	"github.com/deliveryhero/pipeline/example/processors"
+	"log"
+	"time"
+)
+
+func main() {
+	// Create a context that times out after 5 seconds
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Create a pipeline that emits 1-7
+	p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7)
+
+	// Wait 2 seconds to pass each number through the pipe
+	// * 2 concurrent Processors
+	p = pipeline.ProcessConcurrently(ctx, 2, &processors.Waiter{
+		Duration: 2 * time.Second,
+	}, p)
+
+	// Finally, lets print the results and see what happened
+	for result := range p {
+		log.Printf("result: %d\n", result)
+	}
+
+	// Output
+	// result: 2
+	// result: 1
+	// result: 4
+	// result: 3
+	// error: could not process 6, process was canceled
+	// error: could not process 5, process was canceled
+	// error: could not process 7, context deadline exceeded
+}
+
+```
 
 ### func [Split](/split.go#L5)
 

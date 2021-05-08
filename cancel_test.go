@@ -53,12 +53,12 @@ func TestCancel(t *testing.T) {
 		return
 	}
 
-	// The first half of the logs (+-5%) should be a string representation of the numbers in order
+	// The first half of the logs (+-20%) should be a string representation of the numbers in order
 	var iCanceled int
 	for i, log := range logs {
 		if strconv.Itoa(i) != log {
 			iCanceled = i
-			if isAboutHalfWay := math.Abs(float64((lenLogs/2)-i)) <= .1*float64(lenLogs); isAboutHalfWay {
+			if isAboutHalfWay := math.Abs(float64((lenLogs/2)-i)) <= .2*float64(lenLogs); isAboutHalfWay {
 				break
 			}
 			t.Errorf("got %d, wanted %s", i, log)

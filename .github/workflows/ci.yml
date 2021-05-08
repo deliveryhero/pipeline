@@ -14,9 +14,6 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
-          
-      - name: Lint Commit Logs
-        uses: aevea/commitsar@v0.16.0
 
       - name: Lint
         if: always()

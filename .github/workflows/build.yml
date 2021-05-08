@@ -72,7 +72,7 @@ jobs:
         email: 'marksalpeter@gmail.com'
         badge-codecov: true
         badge-godoc: true
-        badge-github: "ci.yml" 
+        badge-github: "build.yml" 
         badge-goreportcard: true
         badge-travisci: false
         commit-message: 'improvement(docs): updated docs'

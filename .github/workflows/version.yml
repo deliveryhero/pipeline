@@ -30,22 +30,3 @@ jobs:
           tag_name: ${{ steps.changelog.outputs.tag }}
           release_name: ${{ steps.changelog.outputs.tag }}
           body: ${{ steps.changelog.outputs.clean_changelog }}
-
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Check out repository
-      uses: actions/checkout@v2
-    - name: Update readme according to Go doc
-      uses: posener/goreadme@dbdf10372a07ec54fb590182ec062ec0969e9b7f
-      with:
-        email: 'marksalpeter@gmail.com'
-        badge-codecov: false
-        badge-godoc: true
-        badge-github: true 
-        badge-goreadme: false
-        badge-goreportcard: true
-        badge-travisci: false
-        types: true
-        functions: true
-        github-token: '${{ secrets.GITHUB_TOKEN }}'

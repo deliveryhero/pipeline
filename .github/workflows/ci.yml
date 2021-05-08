@@ -14,7 +14,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
-
+          
       - name: Lint Commit Logs
         uses: aevea/commitsar@v0.16.0
 
@@ -70,12 +70,12 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v2
     - name: Update readme according to Go doc
-      uses: posener/goreadme@dbdf10372a07ec54fb590182ec062ec0969e9b7f
+      uses: posener/goreadme@e713475bae0c17d5083f4378c5e53d6c66d74c74
       with:
         email: 'marksalpeter@gmail.com'
         badge-codecov: true
         badge-godoc: true
-        badge-github: true 
+        badge-github: "ci.yml" 
         badge-goreadme: false
         badge-goreportcard: true
         badge-travisci: false

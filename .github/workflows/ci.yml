@@ -1,4 +1,4 @@
-name: ci
+name: build
 
 on: push
 
@@ -48,6 +48,7 @@ jobs:
           fail_ci_if_error: true
 
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -62,6 +63,7 @@ jobs:
         run: go build -v ./...
 
   docs:
+    needs: build
     runs-on: ubuntu-latest
     steps:
     - name: Check out repository
@@ -72,10 +74,37 @@ jobs:
         email: 'marksalpeter@gmail.com'
         badge-codecov: true
         badge-godoc: true
-        badge-github: "build.yml" 
+        badge-github: "ci.yml" 
         badge-goreportcard: true
         badge-travisci: false
         commit-message: 'improvement(docs): updated docs'
         types: true
         functions: true
         github-token: '${{ secrets.GITHUB_TOKEN }}'
+
+  version:
+    needs: docs
+    if: github.ref == 'refs/heads/main' # only version on push to master
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Conventional Commits Versioning + Changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.github_token }}
+          skip-version-file: true
+          output-file: false
+          skip-commit: true
+      
+      - name: Tag + Release
+        uses: actions/create-release@v1
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+        with:
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          release_name: ${{ steps.changelog.outputs.tag }}
+          body: ${{ steps.changelog.outputs.clean_changelog }}

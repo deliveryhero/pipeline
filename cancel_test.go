@@ -11,7 +11,7 @@ import (
 )
 
 func TestCancel(t *testing.T) {
-	const testDuration = time.Millisecond
+	const testDuration = time.Second
 
 	// Collect logs
 	var logs []string
@@ -62,6 +62,9 @@ func TestCancel(t *testing.T) {
 				break
 			}
 			t.Errorf("got %d, wanted %s", i, log)
+			for _, l := range logs {
+				t.Error(l)
+			}
 		}
 	}
 

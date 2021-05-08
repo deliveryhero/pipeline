@@ -1,8 +1,6 @@
 name: ci
 
-on:
-  pull_request:
-    branches: [main]
+on: push
 
 jobs:
   conventional-commits:

@@ -16,16 +16,16 @@ jobs:
           go-version: 1.16
 
       - name: Lint Commit Logs
-        uses: aevea/commitsar@v0.15.0
+        uses: aevea/commitsar@v0.16.0
 
       - name: Lint
+        if: always()
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.29
 
   test:
     runs-on: ubuntu-latest
-    needs: lint
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -52,7 +52,6 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -67,7 +66,6 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
-    needs: build
     steps:
     - name: Check out repository
       uses: actions/checkout@v2

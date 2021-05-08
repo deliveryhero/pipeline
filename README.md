@@ -1,7 +1,6 @@
 # pipeline
 
-[![GitHub Workflow Status](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml/badge.svg?branch=experiment-readme-improvement)](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml?query=branch:experiment-readme-improvement)
-[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/experiment-readme-improvement/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
+[![GitHub Workflow Status](https://deliveryhero/pipeline/workflows/CI/badge.svg)](https://deliveryhero/pipeline/actions)
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline)
 [![Go Report Card](https://goreportcard.com/badge/github.com/deliveryhero/pipeline)](https://goreportcard.com/report/github.com/deliveryhero/pipeline)
 

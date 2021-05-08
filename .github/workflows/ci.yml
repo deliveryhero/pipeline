@@ -1,22 +1,8 @@
 name: ci
 
-on:
-  pull_request:
-    branches: [main]
+on: push
 
 jobs:
-  conventional-commits:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Conventional Commits
-        uses: aevea/commitsar@v0.15.0
-
   lint:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -30,6 +16,7 @@ jobs:
           go-version: 1.16
 
       - name: Lint
+        if: always()
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.29
@@ -62,7 +49,6 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -74,3 +60,22 @@ jobs:
 
       - name: Build
         run: go build -v ./...
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Update readme according to Go doc
+      uses: posener/goreadme@e713475bae0c17d5083f4378c5e53d6c66d74c74
+      with:
+        email: 'marksalpeter@gmail.com'
+        badge-codecov: true
+        badge-godoc: true
+        badge-github: "ci.yml" 
+        badge-goreportcard: true
+        badge-travisci: false
+        commit-message: 'improvement(docs): updated docs'
+        types: true
+        functions: true
+        github-token: '${{ secrets.GITHUB_TOKEN }}'

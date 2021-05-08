@@ -1,7 +1,7 @@
 # pipeline
 
-[![Build Status](https://travis-ci.org/deliveryhero/pipeline.svg?branch=master)](https://travis-ci.org/deliveryhero/pipeline)
-[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/master/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
+[![GitHub Workflow Status](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml/badge.svg?branch=experiment-readme-improvement)](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml?query=branch:experiment-readme-improvement)
+[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/experiment-readme-improvement/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline)
 [![Go Report Card](https://goreportcard.com/badge/github.com/deliveryhero/pipeline)](https://goreportcard.com/report/github.com/deliveryhero/pipeline)
 
@@ -368,6 +368,16 @@ func main() {
 
 Split takes an interface from Collect and splits it back out into individual elements
 Useful for batch processing pipelines (`input chan -> Collect -> Process -> Split -> Cancel -> output chan`).
+
+## Types
+
+### type [Processor](/processor.go#L8)
+
+`type Processor interface { ... }`
+
+Processor represents a blocking operation in a pipeline. Implementing `Processor` will allow you to add
+business logic to your pipelines without directly managing channels. This simplifies your unit tests
+and eliminates channel management related bugs.
 
 ---
 Readme created from Go doc with [goreadme](https://github.com/posener/goreadme)

@@ -79,7 +79,7 @@ func TestCollect(t *testing.T) {
 		args: args{
 			maxSize:     10,
 			maxDuration: maxTestDuration / 4,
-			inDelay:     (maxTestDuration / 4) - (10 * time.Millisecond),
+			inDelay:     (maxTestDuration / 4) - (25 * time.Millisecond),
 			in:          []interface{}{1, 2, 3, 4, 5},
 			ctxTimeout:  maxTestDuration / 4,
 		},

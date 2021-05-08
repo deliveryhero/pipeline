@@ -1,6 +1,7 @@
 # pipeline
 
-[![GitHub Workflow Status](https://deliveryhero/pipeline/workflows/CI/badge.svg)](https://deliveryhero/pipeline/actions)
+[![GitHub Workflow Status](https://github.com/deliveryhero/pipeline/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/deliveryhero/pipeline/actions/workflows/build.yml?query=branch:main)
+[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/main/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline)
 [![Go Report Card](https://goreportcard.com/badge/github.com/deliveryhero/pipeline)](https://goreportcard.com/report/github.com/deliveryhero/pipeline)
 

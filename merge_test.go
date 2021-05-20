@@ -96,6 +96,23 @@ func TestMerge(t *testing.T) {
 			waitFor:    500 * time.Millisecond,
 			errorCount: 1,
 		}},
+	}, {
+		description: "Single channel passes through",
+		expectedErrors: []error{
+			errors.New("[task a] error 0"),
+			errors.New("[task a] error 1"),
+			errors.New("[task a] error 2"),
+		},
+		tasks: []task{{
+			id:      "a",
+			waitFor: 0,
+			// We shoud expect to 'never' receive this error, because it will emit after the maxTestDuration
+			errorCount: 3,
+		}},
+	}, {
+		description:    "Closed channel returned",
+		expectedErrors: []error{},
+		tasks:          []task{},
 	}} {
 		t.Run(test.description, func(t *testing.T) {
 			// Start doing all of the tasks

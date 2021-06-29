@@ -2,8 +2,9 @@ package pipeline
 
 import (
 	"context"
-	"sync"
 	"time"
+
+	"github.com/deliveryhero/pipeline/semaphore"
 )
 
 // ProcessBatch collects up to maxSize elements over maxDuration and processes them together as a slice of `interface{}`s.
@@ -19,7 +20,11 @@ func ProcessBatch(
 ) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {
-		processBatch(ctx, maxSize, maxDuration, processor, in, out)
+		for {
+			if !processOneBatch(ctx, maxSize, maxDuration, processor, in, out) {
+				break
+			}
+		}
 		close(out)
 	}()
 	return out
@@ -37,55 +42,66 @@ func ProcessBatchConcurrently(
 ) <-chan interface{} {
 	// Create the out chan
 	out := make(chan interface{})
-	// Close the out chan after all of the Processors finish executing
-	var wg sync.WaitGroup
-	wg.Add(concurrently)
 	go func() {
-		wg.Wait()
+		// Perform Process concurrently times
+		sem := semaphore.New(concurrently)
+		lctx, done := context.WithCancel(context.Background())
+		for !isDone(lctx) {
+			sem.Add(1)
+			go func() {
+				if !processOneBatch(ctx, maxSize, maxDuration, processor, in, out) {
+					done()
+				}
+				sem.Done()
+			}()
+		}
+		// Close the out chan after all of the Processors finish executing
+		sem.Wait()
 		close(out)
+		done() // Satisfy go-vet
 	}()
-	// Perform Process concurrently times
-	for i := 0; i < concurrently; i++ {
-		go func() {
-			processBatch(ctx, maxSize, maxDuration, processor, in, out)
-			wg.Done()
-		}()
-	}
 	return out
 }
 
-func processBatch(
+// isDone returns true if the context is canceled
+func isDone(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		return true
+	default:
+		return false
+	}
+}
+
+// processOneBatch processes one batch of inputs from the in chan.
+// It returns true if the in chan is still open.
+func processOneBatch(
 	ctx context.Context,
 	maxSize int,
 	maxDuration time.Duration,
 	processor Processor,
 	in <-chan interface{},
 	out chan<- interface{},
-) {
-	for {
-		// Collect interfaces for batch processing
-		is, open := collect(ctx, maxSize, maxDuration, in)
-		if is != nil {
-			select {
-			// Cancel all inputs during shutdown
-			case <-ctx.Done():
-				processor.Cancel(is, ctx.Err())
-			// Otherwise Process the inputs
-			default:
-				results, err := processor.Process(ctx, is)
-				if err != nil {
-					processor.Cancel(is, err)
-					continue
-				}
-				// Split the results back into interfaces
-				for _, result := range results.([]interface{}) {
-					out <- result
-				}
+) (open bool) {
+	// Collect interfaces for batch processing
+	is, open := collect(ctx, maxSize, maxDuration, in)
+	if is != nil {
+		select {
+		// Cancel all inputs during shutdown
+		case <-ctx.Done():
+			processor.Cancel(is, ctx.Err())
+		// Otherwise Process the inputs
+		default:
+			results, err := processor.Process(ctx, is)
+			if err != nil {
+				processor.Cancel(is, err)
+				return open
+			}
+			// Split the results back into interfaces
+			for _, result := range results.([]interface{}) {
+				out <- result
 			}
 		}
-		// In is closed
-		if !open {
-			return
-		}
 	}
+	return open
 }

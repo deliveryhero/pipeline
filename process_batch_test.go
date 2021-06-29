@@ -260,8 +260,8 @@ func Test_processBatch(t *testing.T) {
 			maxDuration: maxTestDuration,
 			processor: &mockProcessor{
 				// this will take longer to complete than the maxTestDuration by a few micro seconds
-				processDuration: maxTestDuration / 10, // 5 calls to Process > maxTestDuration / 2
-				cancelDuration:  maxTestDuration / 10, // 5 calls to Cancel >  maxTestDuration / 2
+				processDuration: maxTestDuration / 10,                     // 5 calls to Process > maxTestDuration / 2
+				cancelDuration:  maxTestDuration/10 + 25*time.Millisecond, // 5 calls to Cancel >  maxTestDuration / 2
 			},
 			in:  Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 			out: drain,
@@ -295,17 +295,18 @@ func Test_processBatch(t *testing.T) {
 
 			// Process the batch with a timeout of maxTestDuration
 			timeout := time.After(maxTestDuration)
-			done := make(chan interface{})
 			open := true
-			go func() {
-				processBatch(ctx, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in, tt.args.out)
-				close(done)
-			}()
-			select {
-			case <-timeout:
-			case <-done:
-				open = false
-				break
+		loop:
+			for {
+				select {
+				case <-timeout:
+					break loop
+				default:
+					open = processOneBatch(ctx, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in, tt.args.out)
+					if !open {
+						break loop
+					}
+				}
 			}
 
 			// Processing took longer than expected

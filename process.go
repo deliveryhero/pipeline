@@ -2,7 +2,8 @@ package pipeline
 
 import (
 	"context"
-	"sync"
+
+	"github.com/deliveryhero/pipeline/semaphore"
 )
 
 // Process takes each input from the `in <-chan interface{}` and calls `Processor.Process` on it.
@@ -12,7 +13,9 @@ import (
 func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {
-		process(ctx, processor, in, out)
+		for i := range in {
+			process(ctx, processor, i, out)
+		}
 		close(out)
 	}()
 	return out
@@ -23,42 +26,40 @@ func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-
 func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in <-chan interface{}) <-chan interface{} {
 	// Create the out chan
 	out := make(chan interface{})
-	// Close the out chan after all of the Processors finish executing
-	var wg sync.WaitGroup
-	wg.Add(concurrently)
 	go func() {
-		wg.Wait()
+		// Perform Process concurrently times
+		sem := semaphore.New(concurrently)
+		for i := range in {
+			sem.Add(1)
+			go func(i interface{}) {
+				process(ctx, p, i, out)
+				sem.Done()
+			}(i)
+		}
+		// Close the out chan after all of the Processors finish executing
+		sem.Wait()
 		close(out)
 	}()
-	// Perform Process concurrently times
-	for i := 0; i < concurrently; i++ {
-		go func() {
-			process(ctx, p, in, out)
-			wg.Done()
-		}()
-	}
 	return out
 }
 
 func process(
 	ctx context.Context,
 	processor Processor,
-	in <-chan interface{},
+	i interface{},
 	out chan<- interface{},
 ) {
-	for i := range in {
-		select {
-		// When the context is canceled, Cancel all inputs
-		case <-ctx.Done():
-			processor.Cancel(i, ctx.Err())
-		// Otherwise, Process all inputs
-		default:
-			result, err := processor.Process(ctx, i)
-			if err != nil {
-				processor.Cancel(i, err)
-				continue
-			}
-			out <- result
+	select {
+	// When the context is canceled, Cancel all inputs
+	case <-ctx.Done():
+		processor.Cancel(i, ctx.Err())
+	// Otherwise, Process all inputs
+	default:
+		result, err := processor.Process(ctx, i)
+		if err != nil {
+			processor.Cancel(i, err)
+			return
 		}
+		out <- result
 	}
 }

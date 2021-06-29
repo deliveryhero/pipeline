@@ -16,7 +16,7 @@ type mockProcessor struct {
 	errs               []interface{}
 }
 
-// Process waits processDuration before returning its input at its output
+// Process waits processDuration before returning its input as its output
 func (m *mockProcessor) Process(ctx context.Context, i interface{}) (interface{}, error) {
 	select {
 	case <-ctx.Done():

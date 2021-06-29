@@ -157,7 +157,7 @@ func main() {
 
 ```
 
-### func [Process](/process.go#L12)
+### func [Process](/process.go#L13)
 
 `func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-chan interface{}`
 
@@ -206,7 +206,7 @@ func main() {
 
 ```
 
-### func [ProcessBatch](/process_batch.go#L13)
+### func [ProcessBatch](/process_batch.go#L14)
 
 `func ProcessBatch(
     ctx context.Context,
@@ -257,7 +257,7 @@ func main() {
 
 ```
 
-### func [ProcessBatchConcurrently](/process_batch.go#L30)
+### func [ProcessBatchConcurrently](/process_batch.go#L35)
 
 `func ProcessBatchConcurrently(
     ctx context.Context,
@@ -313,7 +313,7 @@ func main() {
 
 ```
 
-### func [ProcessConcurrently](/process.go#L23)
+### func [ProcessConcurrently](/process.go#L26)
 
 `func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in <-chan interface{}) <-chan interface{}`
 
@@ -378,6 +378,10 @@ Useful for batch processing pipelines (`input chan -> Collect -> Process -> Spli
 Processor represents a blocking operation in a pipeline. Implementing `Processor` will allow you to add
 business logic to your pipelines without directly managing channels. This simplifies your unit tests
 and eliminates channel management related bugs.
+
+## Sub Packages
+
+* [semaphore](./semaphore): package semaphore is like a sync.WaitGroup with an upper limit.
 
 ---
 Readme created from Go doc with [goreadme](https://github.com/posener/goreadme)

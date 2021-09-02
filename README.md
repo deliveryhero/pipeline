@@ -12,6 +12,13 @@ If you have another common use case you would like to see covered by this packag
 
 ## Functions
 
+### func [Buffer](/buffer.go#L5)
+
+`func Buffer(size int, in <-chan interface{}) <-chan interface{}`
+
+Buffer creates a buffered channel that will close after the input
+is closed and the buffer is fully drained
+
 ### func [Cancel](/cancel.go#L9)
 
 `func Cancel(ctx context.Context, cancel func(interface{}, error), in <-chan interface{}) <-chan interface{}`

@@ -1,7 +1,7 @@
 # pipeline
 
-[![GitHub Workflow Status](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml?query=branch:main)
-[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/main/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
+[![GitHub Workflow Status](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml/badge.svg?branch=partition-func)](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml?query=branch:partition-func)
+[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/partition-func/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline)
 [![Go Report Card](https://goreportcard.com/badge/github.com/deliveryhero/pipeline)](https://goreportcard.com/report/github.com/deliveryhero/pipeline)
 
@@ -164,6 +164,69 @@ func main() {
 
 ```
 
+### func [Partition](/partition.go#L5)
+
+`func Partition(partitions int, partition func(interface{}) int, in <-chan interface{}) []<-chan interface{}`
+
+Partition fans a single input channel into multiple output channels based on the partition func.
+Warning: If `partition(interface{}) int` returns an int >= `partitions`, it will cause a panic.
+
+```golang
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/deliveryhero/pipeline"
+	"os"
+	"os/signal"
+	"time"
+)
+
+func main() {
+	// Create a context for the pipeline
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer cancel()
+
+	// Create a pipeline that emits numbers 1 once, ..., 3 three times.
+	p := pipeline.Emit(1, 2, 3, 2, 3, 3)
+
+	// Create 4 partitions, one for each number 0 -> 3
+	partitions := 4
+	ps := pipeline.Partition(partitions, func(i interface{}) int {
+		return i.(int) % partitions
+	}, p)
+
+	// Create a batch processor that sums the contents in each batch
+	newBatchSumProcessor := func(partitionID int) pipeline.Processor {
+		return pipeline.NewProcessor(func(ctx context.Context, i interface{}) (interface{}, error) {
+			sum := len(i.([]interface{}))
+			return []interface{}{fmt.Sprintf("partition %d received %d numbers", partitionID, sum)}, nil
+		}, nil)
+	}
+
+	// Sum the contents of each partition with a the BatchSumProcessor
+	var outs []<-chan interface{}
+	for i, partition := range ps {
+		outs = append(outs, pipeline.ProcessBatch(ctx, 3, time.Millisecond, newBatchSumProcessor(i), partition))
+	}
+
+	// Print the output
+	for i := range pipeline.Merge(outs...) {
+		fmt.Println(i)
+	}
+
+	fmt.Println("finished")
+
+	// Output
+	// partition 2 received 2 numbers
+	// partition 1 received 1 numbers
+	// partition 3 received 3 numbers
+	// finished
+}
+
+```
+
 ### func [Process](/process.go#L13)
 
 `func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-chan interface{}`
@@ -213,7 +276,7 @@ func main() {
 
 ```
 
-### func [ProcessBatch](/process_batch.go#L14)
+### func [ProcessBatch](/process_batch.go#L15)
 
 `func ProcessBatch(
     ctx context.Context,
@@ -264,7 +327,7 @@ func main() {
 
 ```
 
-### func [ProcessBatchConcurrently](/process_batch.go#L35)
+### func [ProcessBatchConcurrently](/process_batch.go#L36)
 
 `func ProcessBatchConcurrently(
     ctx context.Context,
@@ -316,6 +379,87 @@ func main() {
 	// error: could not process [5 6], process was canceled
 	// error: could not process [7 8], process was canceled
 	// error: could not process [9], context deadline exceeded
+}
+
+```
+
+### func [ProcessBatchPartitionsConcurrently](/process_batch.go#L72)
+
+`func ProcessBatchPartitionsConcurrently(
+    ctx context.Context,
+    partitions,
+    maxSize int,
+    maxDuration time.Duration,
+    partition func(i interface{}) int,
+    processor Processor,
+    in <-chan interface{},
+) <-chan interface{}`
+
+ProcessBatchPartitionsConcurrently is similar to `ProcessBatchConcurrently`, except
+it uses a custom partition function to determine which batch `Processor` each input gets sent to.
+This is useful for preventing locking issues while batch proccessing data concurrently.
+If you are not encountering locking issues, it is slightly more efficient to use `ProcessBatchConcurrently` instead.
+Warning: If `partition(interface{}) int` returns an int >= `partitions`, it will cause a panic.
+
+```golang
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/deliveryhero/pipeline"
+	"os"
+	"os/signal"
+	"time"
+)
+
+func main() {
+	// Create a context for the pipeline
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer cancel()
+
+	// Create a pipeline that emits numbers 1 once, ..., 3 three times.
+	// Add a 0 to demonstrate error handling
+	p := pipeline.Emit(0, 1, 2, 3, 2, 3, 3)
+
+	// Create a partition func that will route each number into a seprate partition
+	partitions := 3
+	partition := func(i interface{}) int {
+		return i.(int) % partitions
+	}
+
+	// Create a batch processor that sums the contents of each batch
+	processor := pipeline.NewProcessor(func(ctx context.Context, i interface{}) (interface{}, error) {
+		is := i.([]interface{})
+		// If  each partition to contain only one number
+		prev := is[0].(int)
+		for _, i := range is {
+			n := i.(int)
+			if prev != n {
+				return nil, fmt.Errorf("the batch contains more than one number: %d != %d", prev, n)
+			}
+			prev = n
+		}
+		return []interface{}{fmt.Sprintf("partition %d received %d numbers", prev, len(is))}, nil
+	}, func(i interface{}, err error) {
+		fmt.Printf("error: %s\n", err)
+	})
+
+	// Partition the pipeline into 3 batches (indexed 0 -> 2)
+	p = pipeline.ProcessBatchPartitionsConcurrently(ctx, partitions, 5, time.Second, partition, processor, p)
+
+	// Print the output
+	for i := range p {
+		fmt.Println(i)
+	}
+
+	fmt.Println("finished")
+
+	// Output
+	// error: the batch contains more than one number: 0 != 3
+	// partition 2 received 2 numbers
+	// partition 1 received 1 numbers
+	// finished
 }
 
 ```

@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/deliveryhero/pipeline/semaphore"
@@ -60,6 +61,44 @@ func ProcessBatchConcurrently(
 		close(out)
 		done() // Satisfy go-vet
 	}()
+	return out
+}
+
+// ProcessBatchPartitionsConcurrently is similar to `ProcessBatchConcurrently`, except
+// it uses a custom partition function to determine which batch `Processor` each input gets sent to.
+// This is useful for preventing locking issues while batch proccessing data concurrently.
+// If you are not encountering locking issues, it is slightly more efficient to use `ProcessBatchConcurrently` instead.
+// Warning: If `partition(interface{}) int` returns an int >= `partitions`, it will cause a panic.
+func ProcessBatchPartitionsConcurrently(
+	ctx context.Context,
+	partitions,
+	maxSize int,
+	maxDuration time.Duration,
+	partition func(i interface{}) int,
+	processor Processor,
+	in <-chan interface{},
+) <-chan interface{} {
+	// Create the output channel
+	out := make(chan interface{})
+	// Wait for all of the partitioned channels to close before closing the output channel
+	var wg sync.WaitGroup
+	wg.Add(partitions)
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	// Partition the in chan using the partition func
+	for _, in := range Partition(partitions, partition, in) {
+		// Process each partition in a seprate batch
+		go func(in <-chan interface{}) {
+			defer wg.Done()
+			for {
+				if !processOneBatch(ctx, maxSize, maxDuration, processor, in, out) {
+					break
+				}
+			}
+		}(in)
+	}
 	return out
 }
 

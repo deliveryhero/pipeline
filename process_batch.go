@@ -15,7 +15,7 @@ func ProcessBatch(
 	ctx context.Context,
 	maxSize int,
 	maxDuration time.Duration,
-	processor Processor,
+	processor Processor[interface{}, interface{}],
 	in <-chan interface{},
 ) <-chan interface{} {
 	out := make(chan interface{})
@@ -37,7 +37,7 @@ func ProcessBatchConcurrently(
 	concurrently,
 	maxSize int,
 	maxDuration time.Duration,
-	processor Processor,
+	processor Processor[interface{}, interface{}],
 	in <-chan interface{},
 ) <-chan interface{} {
 	// Create the out chan
@@ -79,7 +79,7 @@ func processOneBatch(
 	ctx context.Context,
 	maxSize int,
 	maxDuration time.Duration,
-	processor Processor,
+	processor Processor[interface{}, interface{}],
 	in <-chan interface{},
 	out chan<- interface{},
 ) (open bool) {

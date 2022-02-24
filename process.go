@@ -10,7 +10,7 @@ import (
 // When `Processor.Process` returns an `interface{}`, it will be sent to the output `<-chan interface{}`.
 // If `Processor.Process` returns an error, `Processor.Cancel` will be called with the corresponding input and error message.
 // Finally, if the `Context` is canceled, all inputs remaining in the `in <-chan interface{}` will go directly to `Processor.Cancel`.
-func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-chan interface{} {
+func Process(ctx context.Context, processor Processor[interface{}, interface{}], in <-chan interface{}) <-chan interface{} {
 	out := make(chan interface{})
 	go func() {
 		for i := range in {
@@ -23,7 +23,7 @@ func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-
 
 // ProcessConcurrently fans the in channel out to multiple Processors running concurrently,
 // then it fans the out channels of the Processors back into a single out chan
-func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in <-chan interface{}) <-chan interface{} {
+func ProcessConcurrently(ctx context.Context, concurrently int, p Processor[interface{}, interface{}], in <-chan interface{}) <-chan interface{} {
 	// Create the out chan
 	out := make(chan interface{})
 	go func() {
@@ -45,7 +45,7 @@ func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in 
 
 func process(
 	ctx context.Context,
-	processor Processor,
+	processor Processor[interface{}, interface{}],
 	i interface{},
 	out chan<- interface{},
 ) {

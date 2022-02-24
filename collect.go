@@ -5,16 +5,16 @@ import (
 	"time"
 )
 
-// Collect collects `interface{}`s from its in channel and returns `[]interface{}` from its out channel.
-// It will collect up to `maxSize` inputs from the `in <-chan interface{}` over up to `maxDuration` before returning them as `[]interface{}`.
-// That means when `maxSize` is reached before `maxDuration`, `[maxSize]interface{}` will be passed to the out channel.
-// But if `maxDuration` is reached before `maxSize` inputs are collected, `[< maxSize]interface{}` will be passed to the out channel.
+// Collect collects `[Item any]`s from its in channel and returns `[]Item` from its out channel.
+// It will collect up to `maxSize` inputs from the `in <-chan Item` over up to `maxDuration` before returning them as `[]Item`.
+// That means when `maxSize` is reached before `maxDuration`, `[maxSize]Item` will be passed to the out channel.
+// But if `maxDuration` is reached before `maxSize` inputs are collected, `[< maxSize]Item` will be passed to the out channel.
 // When the `context` is canceled, everything in the buffer will be flushed to the out channel.
-func Collect(ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan interface{}) <-chan interface{} {
-	out := make(chan interface{})
+func Collect[Item any](ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan Item) <-chan []Item {
+	out := make(chan []Item)
 	go func() {
 		for {
-			is, open := collect(ctx, maxSize, maxDuration, in)
+			is, open := collect[Item](ctx, maxSize, maxDuration, in)
 			if is != nil {
 				out <- is
 			}
@@ -27,8 +27,8 @@ func Collect(ctx context.Context, maxSize int, maxDuration time.Duration, in <-c
 	return out
 }
 
-func collect(ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan interface{}) ([]interface{}, bool) {
-	var buffer []interface{}
+func collect[Item any](ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan Item) ([]Item, bool) {
+	var buffer []Item
 	timeout := time.After(maxDuration)
 	for {
 		lenBuffer := len(buffer)

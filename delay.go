@@ -7,8 +7,8 @@ import (
 
 // Delay delays reading each input by `duration`.
 // If the context is canceled, the delay will not be applied.
-func Delay(ctx context.Context, duration time.Duration, in <-chan interface{}) <-chan interface{} {
-	out := make(chan interface{})
+func Delay[Item any](ctx context.Context, duration time.Duration, in <-chan Item) <-chan Item {
+	out := make(chan Item)
 	go func() {
 		defer close(out)
 		// Keep reading from in until its closed

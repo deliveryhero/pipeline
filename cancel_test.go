@@ -20,7 +20,7 @@ func TestCancel(t *testing.T) {
 	}
 
 	// Send a stream of ints through the in chan
-	in := make(chan interface{})
+	in := make(chan int)
 	go func() {
 		defer close(in)
 		i := 0
@@ -34,15 +34,15 @@ func TestCancel(t *testing.T) {
 	}()
 
 	// Create a logger for the cancel func
-	canceled := func(i interface{}, err error) {
+	canceled := func(i int, err error) {
 		logf("canceled: %d because %s\n", i, err)
 	}
 
 	// Start canceling the pipeline about half way through the test
 	ctx, cancel := context.WithTimeout(context.Background(), testDuration/2)
 	defer cancel()
-	for o := range Cancel(ctx, canceled, in) {
-		logf("%d", o)
+	for i := range Cancel[int](ctx, canceled, in) {
+		logf("%d", i)
 	}
 
 	// There should be some logs

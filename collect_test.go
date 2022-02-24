@@ -19,12 +19,12 @@ func TestCollect(t *testing.T) {
 	type args struct {
 		maxSize     int
 		maxDuration time.Duration
-		in          []interface{}
+		in          []int
 		inDelay     time.Duration
 		ctxTimeout  time.Duration
 	}
 	type want struct {
-		out  []interface{}
+		out  [][]int
 		open bool
 	}
 	for _, test := range []struct {
@@ -49,12 +49,12 @@ func TestCollect(t *testing.T) {
 		args: args{
 			maxSize:     2,
 			maxDuration: maxTestDuration,
-			in:          []interface{}{1, 2, 3},
+			in:          []int{1, 2, 3},
 			inDelay:     (maxTestDuration / 2) - (10 * time.Millisecond),
 			ctxTimeout:  maxTestDuration,
 		},
 		want: want{
-			out:  []interface{}{[]interface{}{1, 2}},
+			out:  [][]int{{1, 2}},
 			open: true,
 		},
 	}, {
@@ -63,14 +63,14 @@ func TestCollect(t *testing.T) {
 			maxSize:     2,
 			maxDuration: maxTestDuration / 10 * 9,
 			inDelay:     maxTestDuration / 10,
-			in:          []interface{}{1, 2, 3, 4, 5},
+			in:          []int{1, 2, 3, 4, 5},
 			ctxTimeout:  maxTestDuration / 10 * 9,
 		},
 		want: want{
-			out: []interface{}{
-				[]interface{}{1, 2},
-				[]interface{}{3, 4},
-				[]interface{}{5},
+			out: [][]int{
+				{1, 2},
+				{3, 4},
+				{5},
 			},
 			open: false,
 		},
@@ -80,15 +80,15 @@ func TestCollect(t *testing.T) {
 			maxSize:     10,
 			maxDuration: maxTestDuration / 4,
 			inDelay:     (maxTestDuration / 4) - (25 * time.Millisecond),
-			in:          []interface{}{1, 2, 3, 4, 5},
+			in:          []int{1, 2, 3, 4, 5},
 			ctxTimeout:  maxTestDuration / 4,
 		},
 		want: want{
-			out: []interface{}{
-				[]interface{}{1},
-				[]interface{}{2},
-				[]interface{}{3},
-				[]interface{}{4},
+			out: [][]int{
+				{1},
+				{2},
+				{3},
+				{4},
 			},
 			open: true,
 		},
@@ -98,19 +98,19 @@ func TestCollect(t *testing.T) {
 			maxSize:     10,
 			maxDuration: maxTestDuration,
 			inDelay:     0,
-			in:          []interface{}{1, 2, 3, 4, 5},
+			in:          []int{1, 2, 3, 4, 5},
 			ctxTimeout:  0,
 		},
 		want: want{
-			out: []interface{}{
-				[]interface{}{1, 2, 3, 4, 5},
+			out: [][]int{
+				{1, 2, 3, 4, 5},
 			},
 			open: false,
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
 			// Create the in channel
-			in := make(chan interface{})
+			in := make(chan int)
 			go func() {
 				defer close(in)
 				for _, i := range test.args.in {
@@ -124,9 +124,9 @@ func TestCollect(t *testing.T) {
 			defer cancel()
 
 			// Collect responses
-			collect := Collect(ctx, test.args.maxSize, test.args.maxDuration, in)
+			collect := Collect[int](ctx, test.args.maxSize, test.args.maxDuration, in)
 			timeout := time.After(maxTestDuration)
-			var outs []interface{}
+			var outs [][]int
 			var isOpen bool
 		loop:
 			for {

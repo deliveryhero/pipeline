@@ -15,8 +15,8 @@ type task struct {
 }
 
 // do performs the task
-func (t task) do() <-chan interface{} {
-	out := make(chan interface{})
+func (t task) do() <-chan error {
+	out := make(chan error)
 	go func() {
 		defer close(out)
 		time.Sleep(t.waitFor)
@@ -116,14 +116,14 @@ func TestMerge(t *testing.T) {
 	}} {
 		t.Run(test.description, func(t *testing.T) {
 			// Start doing all of the tasks
-			var errChans []<-chan interface{}
+			var errChans []<-chan error
 			for _, task := range test.tasks {
 				errChans = append(errChans, task.do())
 			}
 
 			// Merge all of their error channels together
 			var errs []error
-			merged := Merge(errChans...)
+			merged := Merge[error](errChans...)
 
 			// Create the timeout
 			timeout := time.After(maxTestDuration)

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	pipeline "github.com/deliveryhero/pipeline/v2-beta"
+	"github.com/deliveryhero/pipeline/v2"
 )
 
 func ExampleCancel() {

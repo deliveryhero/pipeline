@@ -14,7 +14,7 @@ func Process[Input, Output any](ctx context.Context, processor Processor[Input, 
 	out := make(chan Output)
 	go func() {
 		for i := range in {
-			process[Input, Output](ctx, processor, i, out)
+			process(ctx, processor, i, out)
 		}
 		close(out)
 	}()
@@ -32,7 +32,7 @@ func ProcessConcurrently[Input, Output any](ctx context.Context, concurrently in
 		for i := range in {
 			sem.Add(1)
 			go func(i Input) {
-				process[Input,Output](ctx, p, i, out)
+				process(ctx, p, i, out)
 				sem.Done()
 			}(i)
 		}
@@ -45,7 +45,7 @@ func ProcessConcurrently[Input, Output any](ctx context.Context, concurrently in
 
 func process[A, B any](
 	ctx context.Context,
-	processor Processor[A,B],
+	processor Processor[A, B],
 	i A,
 	out chan<- B,
 ) {

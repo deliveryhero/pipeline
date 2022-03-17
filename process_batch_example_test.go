@@ -2,11 +2,10 @@ package pipeline_test
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"time"
 
-	"github.com/deliveryhero/pipeline"
-	"github.com/deliveryhero/pipeline/example/processors"
+	"github.com/deliveryhero/pipeline/v2"
 )
 
 func ExampleProcessBatch() {
@@ -17,19 +16,26 @@ func ExampleProcessBatch() {
 	// Create a pipeline that emits 1-6 at a rate of one int per second
 	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
-	// Use the BatchMultiplier to multiply 2 adjacent numbers together
-	p = pipeline.ProcessBatch(ctx, 2, time.Minute, &processors.BatchMultiplier{}, p)
+	// Multiply every 2 adjacent numbers together
+	p = pipeline.ProcessBatch(ctx, 2, time.Minute, pipeline.NewProcessor(func(ctx context.Context, is []int) ([]int, error) {
+		o := 1
+		for _, i := range is {
+			o *= i
+		}
+		return []int{o}, nil
+	}, func(is []int, err error) {
+		fmt.Printf("error: could not multiply %v, %s\n", is, err)
+	}), p)
 
 	// Finally, lets print the results and see what happened
 	for result := range p {
-		log.Printf("result: %d\n", result)
+		fmt.Printf("result: %d\n", result)
 	}
 
 	// Output
 	// result: 2
 	// result: 12
-	// error: could not multiply [5], context deadline exceeded
-	// error: could not multiply [6], context deadline exceeded
+	// error: could not multiply [5 6], context deadline exceeded
 }
 
 func ExampleProcessBatchConcurrently() {
@@ -40,23 +46,27 @@ func ExampleProcessBatchConcurrently() {
 	// Create a pipeline that emits 1-9
 	p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7, 8, 9)
 
-	// Wait 4 seconds to pass 2 numbers through the pipe
-	// * 2 concurrent Processors
-	p = pipeline.ProcessBatchConcurrently(ctx, 2, 2, time.Minute, &processors.Waiter{
-		Duration: 4 * time.Second,
-	}, p)
+	// Add a 1 second delay to each number
+	p = pipeline.Delay(ctx, time.Second, p)
+
+	// Group two inputs at a time
+	p = pipeline.ProcessBatchConcurrently(ctx, 2, 2, time.Minute, pipeline.NewProcessor(func(ctx context.Context, ins []int) ([]int, error) {
+		return ins, nil
+	}, func(i []int, err error) {
+		fmt.Printf("error: could not process %v, %s\n", i, err)
+	}), p)
 
 	// Finally, lets print the results and see what happened
 	for result := range p {
-		log.Printf("result: %d\n", result)
+		fmt.Printf("result: %d\n", result)
 	}
 
 	// Output
-	// result: 3
-	// result: 4
 	// result: 1
 	// result: 2
-	// error: could not process [5 6], process was canceled
-	// error: could not process [7 8], process was canceled
+	// result: 3
+	// result: 5
+	// error: could not process [7 8], context deadline exceeded
+	// error: could not process [4 6], context deadline exceeded
 	// error: could not process [9], context deadline exceeded
 }

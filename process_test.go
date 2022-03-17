@@ -255,13 +255,7 @@ func TestProcessConcurrently(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Create the in channel
-			in := make(chan int)
-			go func() {
-				defer close(in)
-				for _, i := range test.args.in {
-					in <- i
-				}
-			}()
+			in := Emit[int](test.args.in...)
 
 			// Setup the Processor
 			ctx, cancel := context.WithTimeout(context.Background(), test.args.ctxTimeout)
@@ -272,7 +266,7 @@ func TestProcessConcurrently(t *testing.T) {
 				cancelDuration:     test.args.cancelDuration,
 			}
 			out := ProcessConcurrently[int, int](ctx, test.args.concurrently, processor, in)
-
+			
 			var outs []int
 			var isOpen bool
 			timeout := time.After(maxTestDuration)
@@ -280,10 +274,11 @@ func TestProcessConcurrently(t *testing.T) {
 				select {
 				case i, open := <-out:
 					isOpen = open
-					if open {
-						outs = append(outs, i)
+					if !open {
+						break loop
 					}
-					break loop
+					outs = append(outs, i)
+					
 				case <-timeout:
 					break loop
 				}

@@ -7,9 +7,9 @@ import (
 	"github.com/deliveryhero/pipeline/semaphore"
 )
 
-// ProcessBatch collects up to maxSize elements over maxDuration and processes them together as a slice of `interface{}`s.
-// It passed an []interface{} to the `Processor.Process` method and expects a []interface{} back.
-// It passes []interface{} batches of inputs to the `Processor.Cancel` method.
+// ProcessBatch collects up to maxSize elements over maxDuration and processes them together as a slice of `Input`s.
+// It passed an []Output to the `Processor.Process` method and expects a []Input back.
+// It passes []Input batches of inputs to the `Processor.Cancel` method.
 // If the receiver is backed up, ProcessBatch can holds up to 2x maxSize.
 func ProcessBatch[Input, Output any](
 	ctx context.Context,

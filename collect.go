@@ -35,20 +35,19 @@ func collect[Item any](ctx context.Context, maxSize int, maxDuration time.Durati
 		select {
 		case <-ctx.Done():
 			// Reduce the timeout to 1/10th of a second
-			bs, open := collect(context.Background(), maxSize, 100*time.Millisecond, in)
+			bs, open := collect(context.Background(), maxSize-lenBuffer, 100*time.Millisecond, in)
 			return append(buffer, bs...), open
 		case <-timeout:
 			return buffer, true
 		case i, open := <-in:
 			if !open {
 				return buffer, false
-			} else if lenBuffer < maxSize-1 {
-				// There is still room in the buffer
-				buffer = append(buffer, i)
-			} else {
+			} else if lenBuffer == maxSize-1 {
 				// There is no room left in the buffer
 				return append(buffer, i), true
 			}
+			// There is still room in the buffer
+			buffer = append(buffer, i)
 		}
 	}
 }

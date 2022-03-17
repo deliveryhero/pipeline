@@ -11,17 +11,17 @@ import (
 // It passed an []interface{} to the `Processor.Process` method and expects a []interface{} back.
 // It passes []interface{} batches of inputs to the `Processor.Cancel` method.
 // If the receiver is backed up, ProcessBatch can holds up to 2x maxSize.
-func ProcessBatch(
+func ProcessBatch[Input, Output any](
 	ctx context.Context,
 	maxSize int,
 	maxDuration time.Duration,
-	processor Processor[interface{}, interface{}],
-	in <-chan interface{},
-) <-chan interface{} {
-	out := make(chan interface{})
+	processor Processor[[]Input, []Output],
+	in <-chan Input,
+) <-chan Output {
+	out := make(chan Output)
 	go func() {
 		for {
-			if !processOneBatch(ctx, maxSize, maxDuration, processor, in, out) {
+			if !processOneBatch[Input, Output](ctx, maxSize, maxDuration, processor, in, out) {
 				break
 			}
 		}
@@ -32,16 +32,16 @@ func ProcessBatch(
 
 // ProcessBatchConcurrently fans the in channel out to multiple batch Processors running concurrently,
 // then it fans the out channels of the batch Processors back into a single out chan
-func ProcessBatchConcurrently(
+func ProcessBatchConcurrently[Input, Output any](
 	ctx context.Context,
 	concurrently,
 	maxSize int,
 	maxDuration time.Duration,
-	processor Processor[interface{}, interface{}],
-	in <-chan interface{},
-) <-chan interface{} {
+	processor Processor[[]Input, []Output],
+	in <-chan Input,
+) <-chan Output {
 	// Create the out chan
-	out := make(chan interface{})
+	out := make(chan Output)
 	go func() {
 		// Perform Process concurrently times
 		sem := semaphore.New(concurrently)
@@ -75,13 +75,13 @@ func isDone(ctx context.Context) bool {
 
 // processOneBatch processes one batch of inputs from the in chan.
 // It returns true if the in chan is still open.
-func processOneBatch(
+func processOneBatch[Input, Output any](
 	ctx context.Context,
 	maxSize int,
 	maxDuration time.Duration,
-	processor Processor[interface{}, interface{}],
-	in <-chan interface{},
-	out chan<- interface{},
+	processor Processor[[]Input, []Output],
+	in <-chan Input,
+	out chan<- Output,
 ) (open bool) {
 	// Collect interfaces for batch processing
 	is, open := collect(ctx, maxSize, maxDuration, in)
@@ -98,7 +98,7 @@ func processOneBatch(
 				return open
 			}
 			// Split the results back into interfaces
-			for _, result := range results.([]interface{}) {
+			for _, result := range results {
 				out <- result
 			}
 		}

@@ -10,7 +10,7 @@ type Processor[Input, Output any] interface {
 	// When the context is canceled, process should stop all blocking operations and return the `Context.Err()`.
 	Process(ctx context.Context, i Input) (Output, error)
 
-	// Cancel is called if process returns an error or if the context is canceled while there are still items in the `in <-chan interface{}`.
+	// Cancel is called if process returns an error or if the context is canceled while there are still items in the `in <-chan Input`.
 	Cancel(i Input, err error)
 }
 
@@ -18,8 +18,8 @@ type Processor[Input, Output any] interface {
 func NewProcessor[Input, Output any](
 	process func(ctx context.Context, i Input) (Output, error),
 	cancel func(i Input, err error),
-) Processor[Input,Output] {
-	return &processor[Input,Output]{process, cancel}
+) Processor[Input, Output] {
+	return &processor[Input, Output]{process, cancel}
 }
 
 // processor implements Processor

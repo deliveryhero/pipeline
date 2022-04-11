@@ -21,7 +21,7 @@ func ProcessBatch[Input, Output any](
 	out := make(chan Output)
 	go func() {
 		for {
-			if !processOneBatch[Input, Output](ctx, maxSize, maxDuration, processor, in, out) {
+			if !processOneBatch(ctx, maxSize, maxDuration, processor, in, out) {
 				break
 			}
 		}

@@ -62,28 +62,28 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-  docs:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Check out repository
-      uses: actions/checkout@v2
-    - name: Update readme according to Go doc
-      uses: posener/goreadme@v1.4.2
-      with:
-        email: 'marksalpeter@gmail.com'
-        badge-codecov: true
-        badge-godoc: true
-        # badge-github: "ci.yml" 
-        badge-goreportcard: true
-        badge-travisci: false
-        commit-message: 'improvement(docs): updated docs'
-        types: true
-        functions: true
-        github-token: '${{ secrets.GITHUB_TOKEN }}'
+  # docs:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Check out repository
+  #     uses: actions/checkout@v2
+  #   - name: Update readme according to Go doc
+  #     uses: posener/goreadme
+  #     with:
+  #       email: 'marksalpeter@gmail.com'
+  #       badge-codecov: true
+  #       badge-godoc: true
+  #       badge-github: "ci.yml" 
+  #       badge-goreportcard: true
+  #       badge-travisci: false
+  #       commit-message: 'improvement(docs): updated docs'
+  #       types: true
+  #       functions: true
+  #       github-token: '${{ secrets.GITHUB_TOKEN }}'
 
   version:
-    needs: docs
+    # needs: docs
     if: github.ref == 'refs/heads/main' # only version on push to master
     runs-on: ubuntu-latest
     steps:

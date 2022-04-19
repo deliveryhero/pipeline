@@ -2,11 +2,11 @@ package pipeline_test
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
-	"github.com/deliveryhero/pipeline"
-	"github.com/deliveryhero/pipeline/example/processors"
+	"github.com/deliveryhero/pipeline/v2"
 )
 
 func ExampleProcess() {
@@ -17,14 +17,16 @@ func ExampleProcess() {
 	// Create a pipeline that emits 1-6 at a rate of one int per second
 	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
-	// Use the Multiplier to multiply each int by 10
-	p = pipeline.Process(ctx, &processors.Multiplier{
-		Factor: 10,
-	}, p)
+	// Multiply each number by 10
+	p = pipeline.Process(ctx, pipeline.NewProcessor(func(ctx context.Context, in int) (int, error) {
+		return in * 10, nil
+	}, func(i int, err error) {
+		fmt.Printf("error: could not multiply %v, %s\n", i, err)
+	}), p)
 
 	// Finally, lets print the results and see what happened
 	for result := range p {
-		log.Printf("result: %d\n", result)
+		fmt.Printf("result: %d\n", result)
 	}
 
 	// Output
@@ -44,11 +46,15 @@ func ExampleProcessConcurrently() {
 	// Create a pipeline that emits 1-7
 	p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7)
 
-	// Wait 2 seconds to pass each number through the pipe
-	// * 2 concurrent Processors
-	p = pipeline.ProcessConcurrently(ctx, 2, &processors.Waiter{
-		Duration: 2 * time.Second,
-	}, p)
+	// Add a two second delay to each number
+	p = pipeline.Delay(ctx, 2*time.Second, p)
+
+	// Add two concurrent processors that pass input numbers to the output
+	p = pipeline.ProcessConcurrently(ctx, 2, pipeline.NewProcessor(func(ctx context.Context, in int) (int, error) {
+		return in, nil
+	}, func(i int, err error) {
+		fmt.Printf("error: could not process %v, %s\n", i, err)
+	}), p)
 
 	// Finally, lets print the results and see what happened
 	for result := range p {

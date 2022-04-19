@@ -13,8 +13,8 @@ func TestProcessBatch(t *testing.T) {
 		ctxTimeout  time.Duration
 		maxSize     int
 		maxDuration time.Duration
-		processor   *mockProcessor
-		in          <-chan interface{}
+		processor   *mockProcessor[[]int]
+		in          <-chan int
 	}
 	tests := []struct {
 		name     string
@@ -28,7 +28,7 @@ func TestProcessBatch(t *testing.T) {
 			maxDuration: maxTestDuration,
 			// Process 2 elements 33% of the total test duration
 			maxSize: 2,
-			processor: &mockProcessor{
+			processor: &mockProcessor[[]int]{
 				processDuration: maxTestDuration / 3,
 				cancelDuration:  maxTestDuration / 3,
 			},
@@ -45,7 +45,7 @@ func TestProcessBatch(t *testing.T) {
 			maxDuration: maxTestDuration,
 			// Process 5 elements 33% of the total test duration
 			maxSize: 5,
-			processor: &mockProcessor{
+			processor: &mockProcessor[[]int]{
 				processDuration: maxTestDuration / 3,
 				cancelDuration:  maxTestDuration / 3,
 			},
@@ -63,7 +63,7 @@ func TestProcessBatch(t *testing.T) {
 
 			// Process the batch with a timeout of maxTestDuration
 			open := true
-			outChan := ProcessBatch(ctx, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in)
+			outChan := ProcessBatch[int, int](ctx, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in)
 			timeout := time.After(maxTestDuration)
 		loop:
 			for {
@@ -92,8 +92,8 @@ func TestProcessBatchConcurrently(t *testing.T) {
 		concurrently int
 		maxSize      int
 		maxDuration  time.Duration
-		processor    *mockProcessor
-		in           <-chan interface{}
+		processor    *mockProcessor[[]int]
+		in           <-chan int
 	}
 	tests := []struct {
 		name     string
@@ -108,7 +108,7 @@ func TestProcessBatchConcurrently(t *testing.T) {
 			maxSize: 1,
 			// * 2x concurrently
 			concurrently: 2,
-			processor: &mockProcessor{
+			processor: &mockProcessor[[]int]{
 				processDuration: maxTestDuration / 3,
 				cancelDuration:  maxTestDuration / 3,
 			},
@@ -126,7 +126,7 @@ func TestProcessBatchConcurrently(t *testing.T) {
 			maxSize: 1,
 			// * 5x concurrently
 			concurrently: 5,
-			processor: &mockProcessor{
+			processor: &mockProcessor[[]int]{
 				processDuration: maxTestDuration / 3,
 				cancelDuration:  maxTestDuration / 3,
 			},
@@ -144,7 +144,7 @@ func TestProcessBatchConcurrently(t *testing.T) {
 
 			// Process the batch with a timeout of maxTestDuration
 			open := true
-			out := ProcessBatchConcurrently(ctx, tt.args.concurrently, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in)
+			out := ProcessBatchConcurrently[int, int](ctx, tt.args.concurrently, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in)
 			timeout := time.After(maxTestDuration)
 		loop:
 			for {
@@ -167,21 +167,21 @@ func TestProcessBatchConcurrently(t *testing.T) {
 }
 
 func Test_processBatch(t *testing.T) {
-	drain := make(chan interface{}, 10000)
+	drain := make(chan int, 10000)
 	const maxTestDuration = time.Second
 	type args struct {
 		ctxTimeout  time.Duration
 		maxSize     int
 		maxDuration time.Duration
-		processor   *mockProcessor
-		in          <-chan interface{}
-		out         chan<- interface{}
+		processor   *mockProcessor[[]int]
+		in          <-chan int
+		out         chan<- int
 	}
 	type want struct {
 		open      bool
-		processed []interface{}
-		canceled  []interface{}
-		errs      []interface{}
+		processed [][]int
+		canceled  [][]int
+		errs      []string
 	}
 	tests := []struct {
 		name string
@@ -193,9 +193,9 @@ func Test_processBatch(t *testing.T) {
 			ctxTimeout:  maxTestDuration,
 			maxSize:     20,
 			maxDuration: maxTestDuration,
-			processor:   new(mockProcessor),
-			in: func() <-chan interface{} {
-				in := make(chan interface{})
+			processor:   new(mockProcessor[[]int]),
+			in: func() <-chan int {
+				in := make(chan int)
 				close(in)
 				return in
 			}(),
@@ -210,21 +210,21 @@ func Test_processBatch(t *testing.T) {
 			ctxTimeout:  maxTestDuration,
 			maxSize:     2,
 			maxDuration: maxTestDuration,
-			processor:   new(mockProcessor),
+			processor:   new(mockProcessor[[]int]),
 			in:          Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 			out:         drain,
 		},
 		want: want{
 			open: false,
-			processed: []interface{}{[]interface{}{
+			processed: [][]int{{
 				1, 2,
-			}, []interface{}{
+			}, {
 				3, 4,
-			}, []interface{}{
+			}, {
 				5, 6,
-			}, []interface{}{
+			}, {
 				7, 8,
-			}, []interface{}{
+			}, {
 				9, 10,
 			}},
 		},
@@ -234,7 +234,7 @@ func Test_processBatch(t *testing.T) {
 			ctxTimeout:  maxTestDuration / 2,
 			maxSize:     5,
 			maxDuration: maxTestDuration,
-			processor: &mockProcessor{
+			processor: &mockProcessor[[]int]{
 				processReturnsErrs: true,
 			},
 			in:  Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
@@ -242,12 +242,12 @@ func Test_processBatch(t *testing.T) {
 		},
 		want: want{
 			open: false,
-			canceled: []interface{}{[]interface{}{
+			canceled: [][]int{{
 				1, 2, 3, 4, 5,
-			}, []interface{}{
+			}, {
 				6, 7, 8, 9, 10,
 			}},
-			errs: []interface{}{
+			errs: []string{
 				"process error: [1 2 3 4 5]",
 				"process error: [6 7 8 9 10]",
 			},
@@ -258,7 +258,7 @@ func Test_processBatch(t *testing.T) {
 			ctxTimeout:  maxTestDuration / 2,
 			maxSize:     1,
 			maxDuration: maxTestDuration,
-			processor: &mockProcessor{
+			processor: &mockProcessor[[]int]{
 				// this will take longer to complete than the maxTestDuration by a few micro seconds
 				processDuration: maxTestDuration / 10,                     // 5 calls to Process > maxTestDuration / 2
 				cancelDuration:  maxTestDuration/10 + 25*time.Millisecond, // 5 calls to Cancel >  maxTestDuration / 2
@@ -268,19 +268,13 @@ func Test_processBatch(t *testing.T) {
 		},
 		want: want{
 			open: true,
-			processed: []interface{}{
-				[]interface{}{1},
-				[]interface{}{2},
-				[]interface{}{3},
-				[]interface{}{4},
+			processed: [][]int{
+				{1}, {2}, {3}, {4},
 			},
-			canceled: []interface{}{
-				[]interface{}{5},
-				[]interface{}{6},
-				[]interface{}{7},
-				[]interface{}{8},
+			canceled: [][]int{
+				{5}, {6}, {7}, {8},
 			},
-			errs: []interface{}{
+			errs: []string{
 				"context deadline exceeded",
 				"context deadline exceeded",
 				"context deadline exceeded",
@@ -302,7 +296,7 @@ func Test_processBatch(t *testing.T) {
 				case <-timeout:
 					break loop
 				default:
-					open = processOneBatch(ctx, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in, tt.args.out)
+					open = processOneBatch[int, int](ctx, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in, tt.args.out)
 					if !open {
 						break loop
 					}

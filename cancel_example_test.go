@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/deliveryhero/pipeline"
+	"github.com/deliveryhero/pipeline/v2"
 )
 
 func ExampleCancel() {
@@ -19,7 +19,7 @@ func ExampleCancel() {
 	)
 
 	// If the context is canceled, pass the ints to the cancel func for teardown
-	p = pipeline.Cancel(ctx, func(i interface{}, err error) {
+	p = pipeline.Cancel(ctx, func(i int, err error) {
 		log.Printf("%+v could not be processed, %s", i, err)
 	}, p)
 

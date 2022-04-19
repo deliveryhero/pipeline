@@ -12,10 +12,10 @@ func TestDelay(t *testing.T) {
 	type args struct {
 		ctxTimeout time.Duration
 		duration   time.Duration
-		in         []interface{}
+		in         []int
 	}
 	type want struct {
-		out  []interface{}
+		out  []int
 		open bool
 	}
 	for _, test := range []struct {
@@ -27,10 +27,10 @@ func TestDelay(t *testing.T) {
 		args: args{
 			ctxTimeout: maxTestDuration,
 			duration:   maxTestDuration - 100*time.Millisecond,
-			in:         []interface{}{1},
+			in:         []int{1},
 		},
 		want: want{
-			out:  []interface{}{1},
+			out:  []int{1},
 			open: false,
 		},
 	}, {
@@ -38,10 +38,10 @@ func TestDelay(t *testing.T) {
 		args: args{
 			ctxTimeout: 10 * time.Millisecond,
 			duration:   maxTestDuration,
-			in:         []interface{}{1, 2, 3, 4, 5},
+			in:         []int{1, 2, 3, 4, 5},
 		},
 		want: want{
-			out:  []interface{}{1, 2, 3, 4, 5},
+			out:  []int{1, 2, 3, 4, 5},
 			open: false,
 		},
 	}, {
@@ -49,22 +49,16 @@ func TestDelay(t *testing.T) {
 		args: args{
 			ctxTimeout: maxTestDuration,
 			duration:   maxTestDuration / 4,
-			in:         []interface{}{1, 2, 3, 4, 5},
+			in:         []int{1, 2, 3, 4, 5},
 		},
 		want: want{
-			out:  []interface{}{1, 2, 3, 4},
+			out:  []int{1, 2, 3, 4},
 			open: true,
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
 			// Create in channel
-			in := make(chan interface{})
-			go func() {
-				defer close(in)
-				for _, i := range test.args.in {
-					in <- i
-				}
-			}()
+			in := Emit(test.args.in...)
 
 			// Create a context with a timeut
 			ctx, cancel := context.WithTimeout(context.Background(), test.args.ctxTimeout)
@@ -74,7 +68,7 @@ func TestDelay(t *testing.T) {
 			delay := Delay(ctx, test.args.duration, in)
 			timeout := time.After(maxTestDuration)
 			var isOpen bool
-			var outs []interface{}
+			var outs []int
 		loop:
 			for {
 				select {

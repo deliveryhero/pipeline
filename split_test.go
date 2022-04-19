@@ -7,10 +7,10 @@ import (
 
 func TestSplit(t *testing.T) {
 	type args struct {
-		in interface{}
+		in []int
 	}
 	type want struct {
-		out []interface{}
+		out []int
 	}
 	tests := []struct {
 		name string
@@ -20,24 +20,20 @@ func TestSplit(t *testing.T) {
 		{
 			"splits slices if interfaces into individual interfaces",
 			args{
-				in: []interface{}{1, 2, 3, 4, 5},
+				in: []int{1, 2, 3, 4, 5},
 			},
 			want{
-				out: []interface{}{1, 2, 3, 4, 5},
+				out: []int{1, 2, 3, 4, 5},
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Create the in channel
-			in := make(chan interface{})
-			go func() {
-				defer close(in)
-				in <- test.args.in
-			}()
+			in := Emit(test.args.in)
 
 			// Collect the output
-			var outs []interface{}
+			var outs []int
 			for o := range Split(in) {
 				outs = append(outs, o)
 			}

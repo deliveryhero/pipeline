@@ -4,10 +4,10 @@ import (
 	"context"
 )
 
-// Cancel passes an `interface{}` from the `in <-chan interface{}` directly to the out `<-chan interface{}` until the `Context` is canceled.
-// After the context is canceled, everything from `in <-chan interface{}` is sent to the `cancel` func instead with the `ctx.Err()`.
-func Cancel(ctx context.Context, cancel func(interface{}, error), in <-chan interface{}) <-chan interface{} {
-	out := make(chan interface{})
+// Cancel passes an `Item any` from the `in <-chan Item` directly to the out `<-chan Item` until the `Context` is canceled.
+// After the context is canceled, everything from `in <-chan Item` is sent to the `cancel` func instead with the `ctx.Err()`.
+func Cancel[Item any](ctx context.Context, cancel func(Item, error), in <-chan Item) <-chan Item {
+	out := make(chan Item)
 	go func() {
 		defer close(out)
 		for {

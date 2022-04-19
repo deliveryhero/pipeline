@@ -1,394 +1,451 @@
 # pipeline
 
-[![GitHub Workflow Status](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml?query=branch:main)
-[![codecov](https://codecov.io/gh/deliveryhero/pipeline/branch/main/graph/badge.svg)](https://codecov.io/gh/deliveryhero/pipeline)
-[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline)
-[![Go Report Card](https://goreportcard.com/badge/github.com/deliveryhero/pipeline)](https://goreportcard.com/report/github.com/deliveryhero/pipeline)
+[![build](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml)
+[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/deliveryhero/pipeline)
+[![Go Report Card](https://goreportcard.com/badge/deliveryhero/pipeline)](https://goreportcard.com/report/deliveryhero/pipeline)
 
 Pipeline is a go library that helps you build pipelines without worrying about channel management and concurrency.
 It contains common fan-in and fan-out operations as well as useful utility funcs for batch processing and scaling.
 
 If you have another common use case you would like to see covered by this package, please [open a feature request](https://github.com/deliveryhero/pipeline/issues).
 
+## Cookbook
+
+* [How to run a pipeline until the container is killed](https://github.com/deliveryhero/pipeline#PipelineShutsDownWhenContainerIsKilled)
+* [How to shut down a pipeline when there is a error](https://github.com/deliveryhero/pipeline#PipelineShutsDownOnError)
+* [How to shut down a pipeline after it has finished processing a batch of data](https://github.com/deliveryhero/pipeline#PipelineShutsDownWhenInputChannelIsClosed)
+
 ## Functions
 
 ### func [Buffer](/buffer.go#L5)
 
-`func Buffer(size int, in <-chan interface{}) <-chan interface{}`
+`func Buffer[Item any](size int, in <-chan Item) <-chan Item`
 
 Buffer creates a buffered channel that will close after the input
 is closed and the buffer is fully drained
 
 ### func [Cancel](/cancel.go#L9)
 
-`func Cancel(ctx context.Context, cancel func(interface{}, error), in <-chan interface{}) <-chan interface{}`
+`func Cancel[Item any](ctx context.Context, cancel func(Item, error), in <-chan Item) <-chan Item`
 
-Cancel passes an `interface{}` from the `in <-chan interface{}` directly to the out `<-chan interface{}` until the `Context` is canceled.
-After the context is canceled, everything from `in <-chan interface{}` is sent to the `cancel` func instead with the `ctx.Err()`.
+Cancel passes an `Item any` from the `in <-chan Item` directly to the out `<-chan Item` until the `Context` is canceled.
+After the context is canceled, everything from `in <-chan Item` is sent to the `cancel` func instead with the `ctx.Err()`.
 
 ```golang
-package main
 
-import (
-	"context"
-	"github.com/deliveryhero/pipeline"
-	"log"
-	"time"
+// Create a context that lasts for 1 second
+ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+defer cancel()
+
+// Create a basic pipeline that emits one int every 250ms
+p := pipeline.Delay(ctx, time.Second/4,
+    pipeline.Emit(1, 2, 3, 4, 5),
 )
 
-func main() {
-	// Create a context that lasts for 1 second
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+// If the context is canceled, pass the ints to the cancel func for teardown
+p = pipeline.Cancel(ctx, func(i int, err error) {
+    log.Printf("%+v could not be processed, %s", i, err)
+}, p)
 
-	// Create a basic pipeline that emits one int every 250ms
-	p := pipeline.Delay(ctx, time.Second/4,
-		pipeline.Emit(1, 2, 3, 4, 5),
-	)
-
-	// If the context is canceled, pass the ints to the cancel func for teardown
-	p = pipeline.Cancel(ctx, func(i interface{}, err error) {
-		log.Printf("%+v could not be processed, %s", i, err)
-	}, p)
-
-	// Otherwise, process the inputs
-	for out := range p {
-		log.Printf("process: %+v", out)
-	}
-
-	// Output
-	// process: 1
-	// process: 2
-	// process: 3
-	// process: 4
-	// 5 could not be processed, context deadline exceeded
+// Otherwise, process the inputs
+for out := range p {
+    log.Printf("process: %+v", out)
 }
+
+// Output
+// process: 1
+// process: 2
+// process: 3
+// process: 4
+// 5 could not be processed, context deadline exceeded
 
 ```
 
 ### func [Collect](/collect.go#L13)
 
-`func Collect(ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan interface{}) <-chan interface{}`
+`func Collect[Item any](ctx context.Context, maxSize int, maxDuration time.Duration, in <-chan Item) <-chan []Item`
 
-Collect collects `interface{}`s from its in channel and returns `[]interface{}` from its out channel.
-It will collect up to `maxSize` inputs from the `in <-chan interface{}` over up to `maxDuration` before returning them as `[]interface{}`.
-That means when `maxSize` is reached before `maxDuration`, `[maxSize]interface{}` will be passed to the out channel.
-But if `maxDuration` is reached before `maxSize` inputs are collected, `[< maxSize]interface{}` will be passed to the out channel.
+Collect collects `[Item any]`s from its in channel and returns `[]Item` from its out channel.
+It will collect up to `maxSize` inputs from the `in <-chan Item` over up to `maxDuration` before returning them as `[]Item`.
+That means when `maxSize` is reached before `maxDuration`, `[maxSize]Item` will be passed to the out channel.
+But if `maxDuration` is reached before `maxSize` inputs are collected, `[< maxSize]Item` will be passed to the out channel.
 When the `context` is canceled, everything in the buffer will be flushed to the out channel.
 
 ### func [Delay](/delay.go#L10)
 
-`func Delay(ctx context.Context, duration time.Duration, in <-chan interface{}) <-chan interface{}`
+`func Delay[Item any](ctx context.Context, duration time.Duration, in <-chan Item) <-chan Item`
 
 Delay delays reading each input by `duration`.
 If the context is canceled, the delay will not be applied.
 
-### func [Emit](/emit.go#L4)
+### func [Drain](/drain.go#L4)
 
-`func Emit(is ...interface{}) <-chan interface{}`
+`func Drain[Item any](in <-chan Item)`
 
-Emit fans `is ...interface{}`` out to a `<-chan interface{}`
+Drain empties the input and blocks until the channel is closed
+
+### func [Emit](/emit.go#L6)
+
+`func Emit[Item any](is ...Item) <-chan Item`
+
+Emit fans `is ...Item`` out to a `<-chan Item`
+
+### func [Emitter](/emit.go#L19)
+
+`func Emitter[Item any](ctx context.Context, next func() Item) <-chan Item`
+
+Emitter continuously emits new items generated by the next func
+until the context is canceled
 
 ### func [Merge](/merge.go#L6)
 
-`func Merge(ins ...<-chan interface{}) <-chan interface{}`
+`func Merge[Item any](ins ...<-chan Item) <-chan Item`
 
 Merge fans multiple channels in to a single channel
 
 ```golang
-package main
+one := pipeline.Emit(1)
+two := pipeline.Emit(2, 2)
+three := pipeline.Emit(3, 3, 3)
 
-import (
-	"context"
-	"encoding/json"
-	"log"
-	"net/http"
-
-	"github.com/deliveryhero/pipeline"
-	"github.com/deliveryhero/pipeline/example/db"
-)
-
-// SearchResults returns many types of search results at once
-type SearchResults struct {
-	Advertisements []db.Result `json:"advertisements"`
-	Images         []db.Result `json:"images"`
-	Products       []db.Result `json:"products"`
-	Websites       []db.Result `json:"websites"`
+for i := range pipeline.Merge(one, two, three) {
+    fmt.Printf("output: %d\n", i)
 }
 
-func main() {
-	r := http.NewServeMux()
+fmt.Println("done")
 
-	// `GET /search?q=<query>` is an endpoint that merges concurrently fetched
-	// search results into a single search response using `pipeline.Merge`
-	r.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query().Get("q")
-		if len(query) < 1 {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		// If the request times out, or we receive an error from our `db`
-		// the context will stop all pending db queries for this request
-		ctx, cancel := context.WithCancel(r.Context())
-		defer cancel()
-
-		// Fetch all of the different search results concurrently
-		var results SearchResults
-		for err := range pipeline.Merge(
-			db.GetAdvertisements(ctx, query, &results.Advertisements),
-			db.GetImages(ctx, query, &results.Images),
-			db.GetProducts(ctx, query, &results.Products),
-			db.GetWebsites(ctx, query, &results.Websites),
-		) {
-			// Stop all pending db requests if theres an error
-			if err != nil {
-				log.Print(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}
-
-		// Return the search results
-		if bs, err := json.Marshal(&results); err != nil {
-			log.Print(err)
-			w.WriteHeader(http.StatusInternalServerError)
-		} else if _, err := w.Write(bs); err != nil {
-			log.Print(err)
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(http.StatusOK)
-		}
-	})
-}
-
+// Output
 ```
 
 ### func [Process](/process.go#L13)
 
-`func Process(ctx context.Context, processor Processor, in <-chan interface{}) <-chan interface{}`
+`func Process[Input, Output any](ctx context.Context, processor Processor[Input, Output], in <-chan Input) <-chan Output`
 
-Process takes each input from the `in <-chan interface{}` and calls `Processor.Process` on it.
-When `Processor.Process` returns an `interface{}`, it will be sent to the output `<-chan interface{}`.
+Process takes each input from the `in <-chan Input` and calls `Processor.Process` on it.
+When `Processor.Process` returns an `Output`, it will be sent to the output `<-chan Output`.
 If `Processor.Process` returns an error, `Processor.Cancel` will be called with the corresponding input and error message.
-Finally, if the `Context` is canceled, all inputs remaining in the `in <-chan interface{}` will go directly to `Processor.Cancel`.
+Finally, if the `Context` is canceled, all inputs remaining in the `in <-chan Input` will go directly to `Processor.Cancel`.
 
 ```golang
-package main
 
-import (
-	"context"
-	"github.com/deliveryhero/pipeline"
-	"github.com/deliveryhero/pipeline/example/processors"
-	"log"
-	"time"
-)
+// Create a context that times out after 5 seconds
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
 
-func main() {
-	// Create a context that times out after 5 seconds
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+// Create a pipeline that emits 1-6 at a rate of one int per second
+p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
-	// Create a pipeline that emits 1-6 at a rate of one int per second
-	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
+// Multiply each number by 10
+p = pipeline.Process(ctx, pipeline.NewProcessor(func(ctx context.Context, in int) (int, error) {
+    return in * 10, nil
+}, func(i int, err error) {
+    fmt.Printf("error: could not multiply %v, %s\n", i, err)
+}), p)
 
-	// Use the Multiplier to multiply each int by 10
-	p = pipeline.Process(ctx, &processors.Multiplier{
-		Factor: 10,
-	}, p)
-
-	// Finally, lets print the results and see what happened
-	for result := range p {
-		log.Printf("result: %d\n", result)
-	}
-
-	// Output
-	// result: 10
-	// result: 20
-	// result: 30
-	// result: 40
-	// result: 50
-	// error: could not multiply 6, context deadline exceeded
+// Finally, lets print the results and see what happened
+for result := range p {
+    fmt.Printf("result: %d\n", result)
 }
+
+// Output
+// result: 10
+// result: 20
+// result: 30
+// result: 40
+// result: 50
+// error: could not multiply 6, context deadline exceeded
 
 ```
 
 ### func [ProcessBatch](/process_batch.go#L14)
 
-`func ProcessBatch(
+`func ProcessBatch[Input, Output any](
     ctx context.Context,
     maxSize int,
     maxDuration time.Duration,
-    processor Processor,
-    in <-chan interface{},
-) <-chan interface{}`
+    processor Processor[[]Input, []Output],
+    in <-chan Input,
+) <-chan Output`
 
-ProcessBatch collects up to maxSize elements over maxDuration and processes them together as a slice of `interface{}`s.
-It passed an []interface{} to the `Processor.Process` method and expects a []interface{} back.
-It passes []interface{} batches of inputs to the `Processor.Cancel` method.
+ProcessBatch collects up to maxSize elements over maxDuration and processes them together as a slice of `Input`s.
+It passed an []Output to the `Processor.Process` method and expects a []Input back.
+It passes []Input batches of inputs to the `Processor.Cancel` method.
 If the receiver is backed up, ProcessBatch can holds up to 2x maxSize.
 
 ```golang
-package main
 
-import (
-	"context"
-	"github.com/deliveryhero/pipeline"
-	"github.com/deliveryhero/pipeline/example/processors"
-	"log"
-	"time"
-)
+// Create a context that times out after 5 seconds
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
 
-func main() {
-	// Create a context that times out after 5 seconds
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+// Create a pipeline that emits 1-6 at a rate of one int per second
+p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
 
-	// Create a pipeline that emits 1-6 at a rate of one int per second
-	p := pipeline.Delay(ctx, time.Second, pipeline.Emit(1, 2, 3, 4, 5, 6))
+// Multiply every 2 adjacent numbers together
+p = pipeline.ProcessBatch(ctx, 2, time.Minute, pipeline.NewProcessor(func(ctx context.Context, is []int) ([]int, error) {
+    o := 1
+    for _, i := range is {
+        o *= i
+    }
+    return []int{o}, nil
+}, func(is []int, err error) {
+    fmt.Printf("error: could not multiply %v, %s\n", is, err)
+}), p)
 
-	// Use the BatchMultiplier to multiply 2 adjacent numbers together
-	p = pipeline.ProcessBatch(ctx, 2, time.Minute, &processors.BatchMultiplier{}, p)
-
-	// Finally, lets print the results and see what happened
-	for result := range p {
-		log.Printf("result: %d\n", result)
-	}
-
-	// Output
-	// result: 2
-	// result: 12
-	// error: could not multiply [5], context deadline exceeded
-	// error: could not multiply [6], context deadline exceeded
+// Finally, lets print the results and see what happened
+for result := range p {
+    fmt.Printf("result: %d\n", result)
 }
+
+// Output
+// result: 2
+// result: 12
+// error: could not multiply [5 6], context deadline exceeded
 
 ```
 
 ### func [ProcessBatchConcurrently](/process_batch.go#L35)
 
-`func ProcessBatchConcurrently(
+`func ProcessBatchConcurrently[Input, Output any](
     ctx context.Context,
     concurrently,
     maxSize int,
     maxDuration time.Duration,
-    processor Processor,
-    in <-chan interface{},
-) <-chan interface{}`
+    processor Processor[[]Input, []Output],
+    in <-chan Input,
+) <-chan Output`
 
 ProcessBatchConcurrently fans the in channel out to multiple batch Processors running concurrently,
 then it fans the out channels of the batch Processors back into a single out chan
 
 ```golang
-package main
 
-import (
-	"context"
-	"github.com/deliveryhero/pipeline"
-	"github.com/deliveryhero/pipeline/example/processors"
-	"log"
-	"time"
-)
+// Create a context that times out after 5 seconds
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
 
-func main() {
-	// Create a context that times out after 5 seconds
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+// Create a pipeline that emits 1-9
+p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7, 8, 9)
 
-	// Create a pipeline that emits 1-9
-	p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7, 8, 9)
+// Add a 1 second delay to each number
+p = pipeline.Delay(ctx, time.Second, p)
 
-	// Wait 4 seconds to pass 2 numbers through the pipe
-	// * 2 concurrent Processors
-	p = pipeline.ProcessBatchConcurrently(ctx, 2, 2, time.Minute, &processors.Waiter{
-		Duration: 4 * time.Second,
-	}, p)
+// Group two inputs at a time
+p = pipeline.ProcessBatchConcurrently(ctx, 2, 2, time.Minute, pipeline.NewProcessor(func(ctx context.Context, ins []int) ([]int, error) {
+    return ins, nil
+}, func(i []int, err error) {
+    fmt.Printf("error: could not process %v, %s\n", i, err)
+}), p)
 
-	// Finally, lets print the results and see what happened
-	for result := range p {
-		log.Printf("result: %d\n", result)
-	}
-
-	// Output
-	// result: 3
-	// result: 4
-	// result: 1
-	// result: 2
-	// error: could not process [5 6], process was canceled
-	// error: could not process [7 8], process was canceled
-	// error: could not process [9], context deadline exceeded
+// Finally, lets print the results and see what happened
+for result := range p {
+    fmt.Printf("result: %d\n", result)
 }
+
+// Output
+// result: 1
+// result: 2
+// result: 3
+// result: 5
+// error: could not process [7 8], context deadline exceeded
+// error: could not process [4 6], context deadline exceeded
+// error: could not process [9], context deadline exceeded
 
 ```
 
 ### func [ProcessConcurrently](/process.go#L26)
 
-`func ProcessConcurrently(ctx context.Context, concurrently int, p Processor, in <-chan interface{}) <-chan interface{}`
+`func ProcessConcurrently[Input, Output any](ctx context.Context, concurrently int, p Processor[Input, Output], in <-chan Input) <-chan Output`
 
 ProcessConcurrently fans the in channel out to multiple Processors running concurrently,
 then it fans the out channels of the Processors back into a single out chan
 
 ```golang
-package main
 
-import (
-	"context"
-	"github.com/deliveryhero/pipeline"
-	"github.com/deliveryhero/pipeline/example/processors"
-	"log"
-	"time"
-)
+// Create a context that times out after 5 seconds
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
 
-func main() {
-	// Create a context that times out after 5 seconds
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+// Create a pipeline that emits 1-7
+p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7)
 
-	// Create a pipeline that emits 1-7
-	p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7)
+// Add a two second delay to each number
+p = pipeline.Delay(ctx, 2*time.Second, p)
 
-	// Wait 2 seconds to pass each number through the pipe
-	// * 2 concurrent Processors
-	p = pipeline.ProcessConcurrently(ctx, 2, &processors.Waiter{
-		Duration: 2 * time.Second,
-	}, p)
+// Add two concurrent processors that pass input numbers to the output
+p = pipeline.ProcessConcurrently(ctx, 2, pipeline.NewProcessor(func(ctx context.Context, in int) (int, error) {
+    return in, nil
+}, func(i int, err error) {
+    fmt.Printf("error: could not process %v, %s\n", i, err)
+}), p)
 
-	// Finally, lets print the results and see what happened
-	for result := range p {
-		log.Printf("result: %d\n", result)
-	}
-
-	// Output
-	// result: 2
-	// result: 1
-	// result: 4
-	// result: 3
-	// error: could not process 6, process was canceled
-	// error: could not process 5, process was canceled
-	// error: could not process 7, context deadline exceeded
+// Finally, lets print the results and see what happened
+for result := range p {
+    log.Printf("result: %d\n", result)
 }
+
+// Output
+// result: 2
+// result: 1
+// result: 4
+// result: 3
+// error: could not process 6, process was canceled
+// error: could not process 5, process was canceled
+// error: could not process 7, context deadline exceeded
 
 ```
 
-### func [Split](/split.go#L5)
+### func [Split](/split.go#L4)
 
-`func Split(in <-chan interface{}) <-chan interface{}`
+`func Split[Item any](in <-chan []Item) <-chan Item`
 
 Split takes an interface from Collect and splits it back out into individual elements
-Useful for batch processing pipelines (`input chan -> Collect -> Process -> Split -> Cancel -> output chan`).
 
-## Types
+## Examples
 
-### type [Processor](/processor.go#L8)
+### PipelineShutsDownOnError
 
-`type Processor interface { ... }`
+The following example shows how you can shutdown a pipeline
+gracefully when it receives an error message
 
-Processor represents a blocking operation in a pipeline. Implementing `Processor` will allow you to add
-business logic to your pipelines without directly managing channels. This simplifies your unit tests
-and eliminates channel management related bugs.
+```golang
 
-## Sub Packages
+// Create a context that can be canceled
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
 
-* [semaphore](./semaphore): package semaphore is like a sync.WaitGroup with an upper limit.
+// Create a pipeline that emits 1-10
+p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 
----
-Readme created from Go doc with [goreadme](https://github.com/posener/goreadme)
+// A step that will shutdown the pipeline if the number is greater than 1
+p = pipeline.Process(ctx, pipeline.NewProcessor(func(ctx context.Context, i int) (int, error) {
+    // Shut down the pipeline by canceling the context
+    if i != 1 {
+        cancel()
+        return i, fmt.Errorf("%d caused the shutdown", i)
+    }
+    return i, nil
+}, func(i int, err error) {
+    // The cancel func is called when an error is returned by the process func or the context is canceled
+    fmt.Printf("could not process %d: %s\n", i, err)
+}), p)
+
+// Finally, lets print the results and see what happened
+for result := range p {
+    fmt.Printf("result: %d\n", result)
+}
+
+fmt.Println("exiting the pipeline after all data is processed")
+
+// Output
+// could not process 2: 2 caused the shutdown
+// result: 1
+// could not process 3: context canceled
+// could not process 4: context canceled
+// could not process 5: context canceled
+// could not process 6: context canceled
+// could not process 7: context canceled
+// could not process 8: context canceled
+// could not process 9: context canceled
+// could not process 10: context canceled
+// exiting the pipeline after all data is processed
+
+```
+
+### PipelineShutsDownWhenContainerIsKilled
+
+This example demonstrates a pipline
+that runs until the os / container the pipline is running in kills it
+
+```golang
+
+// Gracefully shutdown the pipeline when the the system is shutting down
+// by canceling the context when os.Kill or os.Interrupt signal is sent
+ctx, cancel := signal.NotifyContext(context.Background(), os.Kill, os.Interrupt)
+defer cancel()
+
+// Create a pipeline that keeps emitting numbers sequentially until the context is canceled
+var count int
+p := pipeline.Emitter(ctx, func() int {
+    count++
+    return count
+})
+
+// Filter out only even numbers
+p = pipeline.Process(ctx, pipeline.NewProcessor(func(ctx context.Context, i int) (int, error) {
+    if i%2 == 0 {
+        return i, nil
+    }
+    return i, fmt.Errorf("'%d' is an odd number", i)
+}, func(i int, err error) {
+    fmt.Printf("error processing '%v': %s\n", i, err)
+}), p)
+
+// Wait a few nanoseconds an simulate the os.Interrupt signal
+go func() {
+    time.Sleep(time.Millisecond / 10)
+    fmt.Print("\n--- os kills the app ---\n\n")
+    syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+}()
+
+// Finally, lets print the results and see what happened
+for result := range p {
+    fmt.Printf("result: %d\n", result)
+}
+
+fmt.Println("exiting after the input channel is closed")
+
+// Output
+// error processing '1': '1' is an odd number
+// result: 2
+//
+// --- os kills the app ---
+//
+// error processing '3': '3' is an odd number
+// error processing '4': context canceled
+// exiting after the input channel is closed
+
+```
+
+### PipelineShutsDownWhenInputChannelIsClosed
+
+The following example demonstrates a pipeline
+that naturally finishes its run when the input channel is closed
+
+```golang
+
+// Create a context that can be canceled
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+
+// Create a pipeline that emits 1-10 and then closes its output channel
+p := pipeline.Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+// Multiply every number by 2
+p = pipeline.Process(ctx, pipeline.NewProcessor(func(ctx context.Context, i int) (int, error) {
+    return i * 2, nil
+}, func(i int, err error) {
+    fmt.Printf("could not multiply %d: %s\n", i, err)
+}), p)
+
+// Finally, lets print the results and see what happened
+for result := range p {
+    fmt.Printf("result: %d\n", result)
+}
+
+fmt.Println("exiting after the input channel is closed")
+
+// Output
+// result: 2
+// result: 4
+// result: 6
+// result: 8
+// result: 10
+// result: 12
+// result: 14
+// result: 16
+// result: 18
+// result: 20
+// exiting after the input channel is closed
+
+```

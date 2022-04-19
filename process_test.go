@@ -255,7 +255,7 @@ func TestProcessConcurrently(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Create the in channel
-			in := Emit[int](test.args.in...)
+			in := Emit(test.args.in...)
 
 			// Setup the Processor
 			ctx, cancel := context.WithTimeout(context.Background(), test.args.ctxTimeout)
@@ -266,11 +266,12 @@ func TestProcessConcurrently(t *testing.T) {
 				cancelDuration:     test.args.cancelDuration,
 			}
 			out := ProcessConcurrently[int, int](ctx, test.args.concurrently, processor, in)
-			
+
 			var outs []int
 			var isOpen bool
 			timeout := time.After(maxTestDuration)
-			loop: for {
+		loop:
+			for {
 				select {
 				case i, open := <-out:
 					isOpen = open
@@ -278,7 +279,7 @@ func TestProcessConcurrently(t *testing.T) {
 						break loop
 					}
 					outs = append(outs, i)
-					
+
 				case <-timeout:
 					break loop
 				}
@@ -290,17 +291,17 @@ func TestProcessConcurrently(t *testing.T) {
 			}
 
 			// Expecting canceled inputs
-			if !containsAll[int](test.want.out, outs) {
+			if !containsAll(test.want.out, outs) {
 				t.Errorf("out = %+v, want %+v", outs, test.want.out)
 			}
 
 			// Expecting canceled inputs
-			if !containsAll[int](test.want.canceled, processor.canceled) {
+			if !containsAll(test.want.canceled, processor.canceled) {
 				t.Errorf("canceled = %+v, want %+v", processor.canceled, test.want.canceled)
 			}
 
 			// Expecting canceled errors
-			if !containsAll[string](test.want.canceledErrs, processor.errs) {
+			if !containsAll(test.want.canceledErrs, processor.errs) {
 				t.Errorf("canceledErrs = %+v, want %+v", processor.errs, test.want.canceledErrs)
 			}
 		})

@@ -364,7 +364,7 @@ that runs until the os / container the pipline is running in kills it
 ctx, cancel := signal.NotifyContext(context.Background(), os.Kill, os.Interrupt)
 defer cancel()
 
-// Create a pipeline that keeps emiting numbers sequentially until the context is cancelled
+// Create a pipeline that keeps emitting numbers sequentially until the context is canceled
 var count int
 p := pipeline.Emitter(ctx, func() int {
     count++

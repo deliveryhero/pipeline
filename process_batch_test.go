@@ -33,7 +33,7 @@ func TestProcessBatch(t *testing.T) {
 				cancelDuration:  maxTestDuration / 3,
 			},
 			// * 10 elements = 165% of the test duration
-			in: Emit[int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+			in: Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 		},
 		// Therefore the out chan should still be open when the test times out
 		wantOpen: true,
@@ -50,7 +50,7 @@ func TestProcessBatch(t *testing.T) {
 				cancelDuration:  maxTestDuration / 3,
 			},
 			// * 10 elements = 66% of the test duration
-			in: Emit[int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+			in: Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 		},
 		// Therefore the out channel should be closed when the test ends
 		wantOpen: false,
@@ -63,7 +63,7 @@ func TestProcessBatch(t *testing.T) {
 
 			// Process the batch with a timeout of maxTestDuration
 			open := true
-			outChan := ProcessBatch[int,int](ctx, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in)
+			outChan := ProcessBatch[int, int](ctx, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in)
 			timeout := time.After(maxTestDuration)
 		loop:
 			for {
@@ -113,7 +113,7 @@ func TestProcessBatchConcurrently(t *testing.T) {
 				cancelDuration:  maxTestDuration / 3,
 			},
 			// * 10 elements = 165% of the test duration
-			in: Emit[int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+			in: Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 		},
 		// Therefore the out chan should still be open when the test times out
 		wantOpen: true,
@@ -131,7 +131,7 @@ func TestProcessBatchConcurrently(t *testing.T) {
 				cancelDuration:  maxTestDuration / 3,
 			},
 			// * 10 elements = 66% of the test duration
-			in: Emit[int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+			in: Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 		},
 		// Therefore the out channel should be closed by the end of the test
 		wantOpen: false,
@@ -144,7 +144,7 @@ func TestProcessBatchConcurrently(t *testing.T) {
 
 			// Process the batch with a timeout of maxTestDuration
 			open := true
-			out := ProcessBatchConcurrently[int,int](ctx, tt.args.concurrently, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in)
+			out := ProcessBatchConcurrently[int, int](ctx, tt.args.concurrently, tt.args.maxSize, tt.args.maxDuration, tt.args.processor, tt.args.in)
 			timeout := time.After(maxTestDuration)
 		loop:
 			for {
@@ -211,7 +211,7 @@ func Test_processBatch(t *testing.T) {
 			maxSize:     2,
 			maxDuration: maxTestDuration,
 			processor:   new(mockProcessor[[]int]),
-			in:          Emit[int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+			in:          Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 			out:         drain,
 		},
 		want: want{
@@ -237,7 +237,7 @@ func Test_processBatch(t *testing.T) {
 			processor: &mockProcessor[[]int]{
 				processReturnsErrs: true,
 			},
-			in:  Emit[int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+			in:  Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 			out: drain,
 		},
 		want: want{
@@ -263,16 +263,16 @@ func Test_processBatch(t *testing.T) {
 				processDuration: maxTestDuration / 10,                     // 5 calls to Process > maxTestDuration / 2
 				cancelDuration:  maxTestDuration/10 + 25*time.Millisecond, // 5 calls to Cancel >  maxTestDuration / 2
 			},
-			in:  Emit[int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+			in:  Emit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
 			out: drain,
 		},
 		want: want{
 			open: true,
 			processed: [][]int{
-				{1},{2},{3},{4},
+				{1}, {2}, {3}, {4},
 			},
 			canceled: [][]int{
-				{5},{6},{7},{8},
+				{5}, {6}, {7}, {8},
 			},
 			errs: []string{
 				"context deadline exceeded",

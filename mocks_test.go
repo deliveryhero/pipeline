@@ -18,7 +18,7 @@ type mockProcessor[Item any] struct {
 
 // Process waits processDuration before returning its input as its output
 func (m *mockProcessor[Item]) Process(ctx context.Context, i Item) (Item, error) {
-	var zero Item 
+	var zero Item
 	select {
 	case <-ctx.Done():
 		return zero, ctx.Err()

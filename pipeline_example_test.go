@@ -41,7 +41,7 @@ func Example_pipelineShutsDownOnError() {
 
 	fmt.Println("exiting the pipeline after all data is processed")
 
-	// Output
+	// Output:
 	// could not process 2: 2 caused the shutdown
 	// result: 1
 	// could not process 3: context canceled
@@ -79,7 +79,7 @@ func Example_pipelineShutsDownWhenInputChannelIsClosed() {
 
 	fmt.Println("exiting after the input channel is closed")
 
-	// Output
+	// Output:
 	// result: 2
 	// result: 4
 	// result: 6
@@ -132,7 +132,7 @@ func Example_pipelineShutsDownWhenContainerIsKilled() {
 
 	fmt.Println("exiting after the input channel is closed")
 
-	// Output
+	// Output:
 	// error processing '1': '1' is an odd number
 	// result: 2
 	//

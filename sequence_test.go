@@ -38,7 +38,7 @@ func SequenceExample() {
 	for o := range addFive {
 		fmt.Println(o)
 	}
-	// Output
+	// Output:
 	// 5
 	// 6
 	// 7

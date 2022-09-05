@@ -1,7 +1,7 @@
 # pipeline
 
-[![build](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml)
-[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/deliveryhero/pipeline)
+[![Build](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/deliveryhero/pipeline/actions/workflows/ci.yml)
+[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/deliveryhero/pipeline/v2)
 [![Go Report Card](https://goreportcard.com/badge/deliveryhero/pipeline)](https://goreportcard.com/report/deliveryhero/pipeline)
 
 Pipeline is a go library that helps you build pipelines without worrying about channel management and concurrency.
@@ -32,7 +32,6 @@ Cancel passes an `Item any` from the `in <-chan Item` directly to the out `<-cha
 After the context is canceled, everything from `in <-chan Item` is sent to the `cancel` func instead with the `ctx.Err()`.
 
 ```golang
-
 // Create a context that lasts for 1 second
 ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 defer cancel()
@@ -51,14 +50,16 @@ p = pipeline.Cancel(ctx, func(i int, err error) {
 for out := range p {
     log.Printf("process: %+v", out)
 }
+```
 
-// Output
-// process: 1
-// process: 2
-// process: 3
-// process: 4
-// 5 could not be processed, context deadline exceeded
+ Output:
 
+```
+process: 1
+process: 2
+process: 3
+process: 4
+5 could not be processed, context deadline exceeded
 ```
 
 ### func [Collect](/collect.go#L13)
@@ -113,8 +114,18 @@ for i := range pipeline.Merge(one, two, three) {
 }
 
 fmt.Println("done")
+```
 
-// Output
+ Output:
+
+```
+Output:: 1
+Output:: 3
+Output:: 2
+Output:: 2
+Output:: 3
+Output:: 3
+done
 ```
 
 ### func [Process](/process.go#L13)
@@ -127,7 +138,6 @@ If `Processor.Process` returns an error, `Processor.Cancel` will be called with 
 Finally, if the `Context` is canceled, all inputs remaining in the `in <-chan Input` will go directly to `Processor.Cancel`.
 
 ```golang
-
 // Create a context that times out after 5 seconds
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancel()
@@ -146,15 +156,17 @@ p = pipeline.Process(ctx, pipeline.NewProcessor(func(ctx context.Context, in int
 for result := range p {
     fmt.Printf("result: %d\n", result)
 }
+```
 
-// Output
-// result: 10
-// result: 20
-// result: 30
-// result: 40
-// result: 50
-// error: could not multiply 6, context deadline exceeded
+ Output:
 
+```
+result: 10
+result: 20
+result: 30
+result: 40
+result: 50
+error: could not multiply 6, context deadline exceeded
 ```
 
 ### func [ProcessBatch](/process_batch.go#L14)
@@ -173,7 +185,6 @@ It passes []Input batches of inputs to the `Processor.Cancel` method.
 If the receiver is backed up, ProcessBatch can holds up to 2x maxSize.
 
 ```golang
-
 // Create a context that times out after 5 seconds
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancel()
@@ -196,12 +207,14 @@ p = pipeline.ProcessBatch(ctx, 2, time.Minute, pipeline.NewProcessor(func(ctx co
 for result := range p {
     fmt.Printf("result: %d\n", result)
 }
+```
 
-// Output
-// result: 2
-// result: 12
-// error: could not multiply [5 6], context deadline exceeded
+ Output:
 
+```
+result: 2
+result: 12
+error: could not multiply [5 6], context deadline exceeded
 ```
 
 ### func [ProcessBatchConcurrently](/process_batch.go#L35)
@@ -219,7 +232,6 @@ ProcessBatchConcurrently fans the in channel out to multiple batch Processors ru
 then it fans the out channels of the batch Processors back into a single out chan
 
 ```golang
-
 // Create a context that times out after 5 seconds
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancel()
@@ -241,16 +253,18 @@ p = pipeline.ProcessBatchConcurrently(ctx, 2, 2, time.Minute, pipeline.NewProces
 for result := range p {
     fmt.Printf("result: %d\n", result)
 }
+```
 
-// Output
-// result: 1
-// result: 2
-// result: 3
-// result: 5
-// error: could not process [7 8], context deadline exceeded
-// error: could not process [4 6], context deadline exceeded
-// error: could not process [9], context deadline exceeded
+ Output:
 
+```
+result: 1
+result: 2
+result: 3
+result: 5
+error: could not process [7 8], context deadline exceeded
+error: could not process [4 6], context deadline exceeded
+error: could not process [9], context deadline exceeded
 ```
 
 ### func [ProcessConcurrently](/process.go#L26)
@@ -261,7 +275,6 @@ ProcessConcurrently fans the in channel out to multiple Processors running concu
 then it fans the out channels of the Processors back into a single out chan
 
 ```golang
-
 // Create a context that times out after 5 seconds
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancel()
@@ -283,16 +296,18 @@ p = pipeline.ProcessConcurrently(ctx, 2, pipeline.NewProcessor(func(ctx context.
 for result := range p {
     log.Printf("result: %d\n", result)
 }
+```
 
-// Output
-// result: 2
-// result: 1
-// result: 4
-// result: 3
-// error: could not process 6, process was canceled
-// error: could not process 5, process was canceled
-// error: could not process 7, context deadline exceeded
+ Output:
 
+```
+result: 2
+result: 1
+result: 4
+result: 3
+error: could not process 6, process was canceled
+error: could not process 5, process was canceled
+error: could not process 7, context deadline exceeded
 ```
 
 ### func [Split](/split.go#L4)
@@ -309,7 +324,6 @@ The following example shows how you can shutdown a pipeline
 gracefully when it receives an error message
 
 ```golang
-
 // Create a context that can be canceled
 ctx, cancel := context.WithCancel(context.Background())
 defer cancel()
@@ -336,20 +350,22 @@ for result := range p {
 }
 
 fmt.Println("exiting the pipeline after all data is processed")
+```
 
-// Output
-// could not process 2: 2 caused the shutdown
-// result: 1
-// could not process 3: context canceled
-// could not process 4: context canceled
-// could not process 5: context canceled
-// could not process 6: context canceled
-// could not process 7: context canceled
-// could not process 8: context canceled
-// could not process 9: context canceled
-// could not process 10: context canceled
-// exiting the pipeline after all data is processed
+ Output:
 
+```
+could not process 2: 2 caused the shutdown
+result: 1
+could not process 3: context canceled
+could not process 4: context canceled
+could not process 5: context canceled
+could not process 6: context canceled
+could not process 7: context canceled
+could not process 8: context canceled
+could not process 9: context canceled
+could not process 10: context canceled
+exiting the pipeline after all data is processed
 ```
 
 ### PipelineShutsDownWhenContainerIsKilled
@@ -358,7 +374,6 @@ This example demonstrates a pipline
 that runs until the os / container the pipline is running in kills it
 
 ```golang
-
 // Gracefully shutdown the pipeline when the the system is shutting down
 // by canceling the context when os.Kill or os.Interrupt signal is sent
 ctx, cancel := signal.NotifyContext(context.Background(), os.Kill, os.Interrupt)
@@ -394,17 +409,19 @@ for result := range p {
 }
 
 fmt.Println("exiting after the input channel is closed")
+```
 
-// Output
-// error processing '1': '1' is an odd number
-// result: 2
-//
-// --- os kills the app ---
-//
-// error processing '3': '3' is an odd number
-// error processing '4': context canceled
-// exiting after the input channel is closed
+ Output:
 
+```
+error processing '1': '1' is an odd number
+result: 2
+
+--- os kills the app ---
+
+error processing '3': '3' is an odd number
+error processing '4': context canceled
+exiting after the input channel is closed
 ```
 
 ### PipelineShutsDownWhenInputChannelIsClosed
@@ -413,7 +430,6 @@ The following example demonstrates a pipeline
 that naturally finishes its run when the input channel is closed
 
 ```golang
-
 // Create a context that can be canceled
 ctx, cancel := context.WithCancel(context.Background())
 defer cancel()
@@ -434,18 +450,20 @@ for result := range p {
 }
 
 fmt.Println("exiting after the input channel is closed")
+```
 
-// Output
-// result: 2
-// result: 4
-// result: 6
-// result: 8
-// result: 10
-// result: 12
-// result: 14
-// result: 16
-// result: 18
-// result: 20
-// exiting after the input channel is closed
+ Output:
 
+```
+result: 2
+result: 4
+result: 6
+result: 8
+result: 10
+result: 12
+result: 14
+result: 16
+result: 18
+result: 20
+exiting after the input channel is closed
 ```

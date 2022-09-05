@@ -40,7 +40,7 @@ func JoinExample() {
 	for o := range convertToStringThenBackToInt {
 		fmt.Println(o)
 	}
-	// Output
+	// Output:
 	// 0
 	// 1
 	// 2

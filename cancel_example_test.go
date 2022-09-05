@@ -28,7 +28,7 @@ func ExampleCancel() {
 		log.Printf("process: %+v", out)
 	}
 
-	// Output
+	// Output:
 	// process: 1
 	// process: 2
 	// process: 3

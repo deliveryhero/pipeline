@@ -29,7 +29,7 @@ func ExampleProcess() {
 		fmt.Printf("result: %d\n", result)
 	}
 
-	// Output
+	// Output:
 	// result: 10
 	// result: 20
 	// result: 30
@@ -61,7 +61,7 @@ func ExampleProcessConcurrently() {
 		log.Printf("result: %d\n", result)
 	}
 
-	// Output
+	// Output:
 	// result: 2
 	// result: 1
 	// result: 4

@@ -32,7 +32,7 @@ func ExampleProcessBatch() {
 		fmt.Printf("result: %d\n", result)
 	}
 
-	// Output
+	// Output:
 	// result: 2
 	// result: 12
 	// error: could not multiply [5 6], context deadline exceeded
@@ -61,7 +61,7 @@ func ExampleProcessBatchConcurrently() {
 		fmt.Printf("result: %d\n", result)
 	}
 
-	// Output
+	// Output:
 	// result: 1
 	// result: 2
 	// result: 3

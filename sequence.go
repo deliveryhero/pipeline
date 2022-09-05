@@ -8,12 +8,12 @@ func (s sequence[A]) Process(ctx context.Context, a A) (A, error) {
 	var zero A
 	var in = a
 	for _, p := range s {
-		if out, err := p.Process(ctx, in); err != nil {
+		out, err := p.Process(ctx, in)
+		if err != nil {
 			p.Cancel(in, err)
 			return zero, err
-		} else {
-			in = out
 		}
+		in = out
 	}
 	return in, nil
 }

@@ -1,0 +1,25 @@
+package pipeline
+
+import (
+	"context"
+	"testing"
+)
+
+func TestSequence(t *testing.T) {
+	// Create a step that increments the integer by 1
+	inc := NewProcessor(func(_ context.Context, i int) (int, error) {
+		i++
+		return i, nil
+	}, nil)
+	// Add 5 to every number
+	inc5 := Sequence(inc, inc, inc, inc, inc)
+	// Verify the sequence ads 5 to each number
+	var i int
+	want := []int{5, 6, 7, 8, 9}
+	for o := range Process(context.Background(), inc5, Emit(0, 1, 2, 3, 4)) {
+		if want[i] != o {
+			t.Fatalf("[%d] = %d, want %d", i, o, want[i])
+		}
+		i++
+	}
+}

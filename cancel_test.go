@@ -41,7 +41,7 @@ func TestCancel(t *testing.T) {
 	// Start canceling the pipeline about half way through the test
 	ctx, cancel := context.WithTimeout(context.Background(), testDuration/2)
 	defer cancel()
-	for i := range Cancel[int](ctx, canceled, in) {
+	for i := range Cancel(ctx, canceled, in) {
 		logf("%d", i)
 	}
 

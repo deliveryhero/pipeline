@@ -61,7 +61,7 @@ func ExampleProcessConcurrently() {
 		log.Printf("result: %d\n", result)
 	}
 
-	// Output:
+	// Example Output:
 	// result: 2
 	// result: 1
 	// result: 4

@@ -124,7 +124,7 @@ func TestCollect(t *testing.T) {
 			defer cancel()
 
 			// Collect responses
-			collect := Collect[int](ctx, test.args.maxSize, test.args.maxDuration, in)
+			collect := Collect(ctx, test.args.maxSize, test.args.maxDuration, in)
 			timeout := time.After(maxTestDuration)
 			var outs [][]int
 			var isOpen bool

@@ -3,7 +3,7 @@ package pipeline
 import (
 	"context"
 
-	"github.com/deliveryhero/pipeline/semaphore"
+	"github.com/deliveryhero/pipeline/v2/semaphore"
 )
 
 // Process takes each input from the `in <-chan Input` and calls `Processor.Process` on it.

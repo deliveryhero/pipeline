@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/deliveryhero/pipeline/semaphore"
+	"github.com/deliveryhero/pipeline/v2/semaphore"
 )
 
 // ProcessBatch collects up to maxSize elements over maxDuration and processes them together as a slice of `Input`s.

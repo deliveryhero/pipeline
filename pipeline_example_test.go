@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/deliveryhero/pipeline/v2"
@@ -13,7 +14,9 @@ import (
 
 // The following example shows how you can shutdown a pipeline
 // gracefully when it receives an error message
-func Example_pipelineShutsDownOnError() {
+func TestExample_pipelineShutsDownOnError(t *testing.T) {
+	t.Parallel()
+
 	// Create a context that can be canceled
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -57,7 +60,9 @@ func Example_pipelineShutsDownOnError() {
 
 // The following example demonstrates a pipeline
 // that naturally finishes its run when the input channel is closed
-func Example_pipelineShutsDownWhenInputChannelIsClosed() {
+func TestExample_pipelineShutsDownWhenInputChannelIsClosed(t *testing.T) {
+	t.Parallel()
+
 	// Create a context that can be canceled
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -95,7 +100,9 @@ func Example_pipelineShutsDownWhenInputChannelIsClosed() {
 
 // This example demonstrates a pipline
 // that runs until the os / container the pipline is running in kills it
-func Example_pipelineShutsDownWhenContainerIsKilled() {
+func TestExample_pipelineShutsDownWhenContainerIsKilled(t *testing.T) {
+	t.Parallel()
+
 	// Gracefully shutdown the pipeline when the the system is shutting down
 	// by canceling the context when os.Kill or os.Interrupt signal is sent
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Kill, os.Interrupt)

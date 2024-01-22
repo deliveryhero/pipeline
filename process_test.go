@@ -8,6 +8,8 @@ import (
 )
 
 func TestProcess(t *testing.T) {
+	t.Parallel()
+
 	const maxTestDuration = time.Second
 	type args struct {
 		ctxTimeout           time.Duration
@@ -97,6 +99,8 @@ func TestProcess(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Create the in channel
 			in := make(chan int)
 			go func() {
@@ -159,6 +163,8 @@ func TestProcess(t *testing.T) {
 }
 
 func TestProcessConcurrently(t *testing.T) {
+	t.Parallel()
+
 	const maxTestDuration = time.Second
 	type args struct {
 		ctxTimeout           time.Duration
@@ -254,6 +260,8 @@ func TestProcessConcurrently(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Create the in channel
 			in := Emit(test.args.in...)
 

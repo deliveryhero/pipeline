@@ -7,6 +7,8 @@ import (
 )
 
 func TestLoopApply(t *testing.T) {
+	t.Parallel()
+
 	transform := NewProcessor(func(_ context.Context, s string) ([]string, error) {
 		return strings.Split(s, ","), nil
 	}, nil)

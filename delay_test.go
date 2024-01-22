@@ -8,6 +8,8 @@ import (
 )
 
 func TestDelay(t *testing.T) {
+	t.Parallel()
+
 	const maxTestDuration = time.Second
 	type args struct {
 		ctxTimeout time.Duration
@@ -57,6 +59,8 @@ func TestDelay(t *testing.T) {
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Create in channel
 			in := Emit(test.args.in...)
 

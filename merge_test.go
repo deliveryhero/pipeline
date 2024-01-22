@@ -32,6 +32,8 @@ func (t task) do() <-chan error {
 // 2. Receives all error messages from the error chans
 // 3. Stays open if one of its child chans never closes
 func TestMerge(t *testing.T) {
+	t.Parallel()
+
 	maxTestDuration := time.Second
 	for _, test := range []struct {
 		description    string
@@ -115,6 +117,8 @@ func TestMerge(t *testing.T) {
 		tasks:          []task{},
 	}} {
 		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+
 			// Start doing all of the tasks
 			var errChans []<-chan error
 			for _, task := range test.tasks {

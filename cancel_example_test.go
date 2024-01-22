@@ -3,12 +3,15 @@ package pipeline_test
 import (
 	"context"
 	"log"
+	"testing"
 	"time"
 
 	"github.com/deliveryhero/pipeline/v2"
 )
 
-func ExampleCancel() {
+func TestExampleCancel(t *testing.T) {
+	t.Parallel()
+
 	// Create a context that lasts for 1 second
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

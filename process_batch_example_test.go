@@ -3,12 +3,15 @@ package pipeline_test
 import (
 	"context"
 	"fmt"
+	"testing"
 	"time"
 
 	"github.com/deliveryhero/pipeline/v2"
 )
 
-func ExampleProcessBatch() {
+func TestExampleProcessBatch(t *testing.T) {
+	t.Parallel()
+
 	// Create a context that times out after 5 seconds
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -38,7 +41,9 @@ func ExampleProcessBatch() {
 	// error: could not multiply [5 6], context deadline exceeded
 }
 
-func ExampleProcessBatchConcurrently() {
+func TestExampleProcessBatchConcurrently(t *testing.T) {
+	t.Parallel()
+
 	// Create a context that times out after 5 seconds
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

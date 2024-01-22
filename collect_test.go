@@ -152,7 +152,6 @@ func TestCollect(t *testing.T) {
 			if !reflect.DeepEqual(test.want.out, outs) {
 				t.Errorf("out = %v, want %v", outs, test.want.out)
 			}
-
 		})
 	}
 }

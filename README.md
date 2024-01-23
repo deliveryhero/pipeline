@@ -11,11 +11,17 @@ If you have another common use case you would like to see covered by this packag
 
 ## Cookbook
 
-* [How to run a pipeline until the container is killed](https://github.com/deliveryhero/pipeline#pipelineshutsdownwhencontaineriskilled)
-* [How to shut down a pipeline when there is a error](https://github.com/deliveryhero/pipeline#pipelineshutsdownonerror)
-* [How to shut down a pipeline after it has finished processing a batch of data](https://github.com/deliveryhero/pipeline#pipelineshutsdownwheninputchannelisclosed)
+* [How to run a pipeline until the container is killed](https://github.com/deliveryhero/pipeline#PipelineShutsDownWhenContainerIsKilled)
+* [How to shut down a pipeline when there is a error](https://github.com/deliveryhero/pipeline#PipelineShutsDownOnError)
+* [How to shut down a pipeline after it has finished processing a batch of data](https://github.com/deliveryhero/pipeline#PipelineShutsDownWhenInputChannelIsClosed)
 
 ## Functions
+
+### func [Apply](/apply.go#L34)
+
+`func Apply[A, B, C any](a Processor[A, []B], b Processor[B, C]) Processor[A, []C]`
+
+Apply connects two processes, applying the second to each item of the first output
 
 ### func [Buffer](/buffer.go#L5)
 
@@ -43,12 +49,12 @@ p := pipeline.Delay(ctx, time.Second/4,
 
 // If the context is canceled, pass the ints to the cancel func for teardown
 p = pipeline.Cancel(ctx, func(i int, err error) {
-    log.Printf("%+v could not be processed, %s", i, err)
+    fmt.Printf("%+v could not be processed, %s\n", i, err)
 }, p)
 
 // Otherwise, process the inputs
 for out := range p {
-    log.Printf("process: %+v", out)
+    fmt.Printf("process: %+v\n", out)
 }
 ```
 

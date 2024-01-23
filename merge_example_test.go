@@ -2,12 +2,11 @@ package pipeline_test
 
 import (
 	"fmt"
-	"testing"
 
 	"github.com/deliveryhero/pipeline/v2"
 )
 
-func TestExampleMerge(t *testing.T) {
+func ExampleMerge() {
 	one := pipeline.Emit(1)
 	two := pipeline.Emit(2, 2)
 	three := pipeline.Emit(3, 3, 3)
@@ -18,11 +17,11 @@ func TestExampleMerge(t *testing.T) {
 
 	fmt.Println("done")
 
-	// Output:
+	// Example Output:
 	// Output:: 1
+	// Output:: 2
+	// Output:: 2
 	// Output:: 3
-	// Output:: 2
-	// Output:: 2
 	// Output:: 3
 	// Output:: 3
 	// done

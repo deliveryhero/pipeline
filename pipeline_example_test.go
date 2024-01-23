@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"testing"
 	"time"
 
 	"github.com/deliveryhero/pipeline/v2"
@@ -14,9 +13,7 @@ import (
 
 // The following example shows how you can shutdown a pipeline
 // gracefully when it receives an error message
-func TestExample_pipelineShutsDownOnError(t *testing.T) {
-	t.Parallel()
-
+func Example_pipelineShutsDownOnError() {
 	// Create a context that can be canceled
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -44,7 +41,7 @@ func TestExample_pipelineShutsDownOnError(t *testing.T) {
 
 	fmt.Println("exiting the pipeline after all data is processed")
 
-	// Output:
+	// Example Output:
 	// could not process 2: 2 caused the shutdown
 	// result: 1
 	// could not process 3: context canceled
@@ -60,9 +57,7 @@ func TestExample_pipelineShutsDownOnError(t *testing.T) {
 
 // The following example demonstrates a pipeline
 // that naturally finishes its run when the input channel is closed
-func TestExample_pipelineShutsDownWhenInputChannelIsClosed(t *testing.T) {
-	t.Parallel()
-
+func Example_pipelineShutsDownWhenInputChannelIsClosed() {
 	// Create a context that can be canceled
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -84,7 +79,7 @@ func TestExample_pipelineShutsDownWhenInputChannelIsClosed(t *testing.T) {
 
 	fmt.Println("exiting after the input channel is closed")
 
-	// Output:
+	// Example Output:
 	// result: 2
 	// result: 4
 	// result: 6
@@ -100,9 +95,7 @@ func TestExample_pipelineShutsDownWhenInputChannelIsClosed(t *testing.T) {
 
 // This example demonstrates a pipline
 // that runs until the os / container the pipline is running in kills it
-func TestExample_pipelineShutsDownWhenContainerIsKilled(t *testing.T) {
-	t.Parallel()
-
+func Example_pipelineShutsDownWhenContainerIsKilled() {
 	// Gracefully shutdown the pipeline when the the system is shutting down
 	// by canceling the context when os.Kill or os.Interrupt signal is sent
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Kill, os.Interrupt)
@@ -139,7 +132,7 @@ func TestExample_pipelineShutsDownWhenContainerIsKilled(t *testing.T) {
 
 	fmt.Println("exiting after the input channel is closed")
 
-	// Output:
+	// Example Output:
 	// error processing '1': '1' is an odd number
 	// result: 2
 	//

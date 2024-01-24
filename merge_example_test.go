@@ -17,11 +17,11 @@ func ExampleMerge() {
 
 	fmt.Println("done")
 
-	// Output:
+	// Example Output:
 	// Output:: 1
+	// Output:: 2
+	// Output:: 2
 	// Output:: 3
-	// Output:: 2
-	// Output:: 2
 	// Output:: 3
 	// Output:: 3
 	// done

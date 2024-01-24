@@ -11,11 +11,58 @@ If you have another common use case you would like to see covered by this packag
 
 ## Cookbook
 
-* [How to run a pipeline until the container is killed](https://github.com/deliveryhero/pipeline#pipelineshutsdownwhencontaineriskilled)
-* [How to shut down a pipeline when there is a error](https://github.com/deliveryhero/pipeline#pipelineshutsdownonerror)
-* [How to shut down a pipeline after it has finished processing a batch of data](https://github.com/deliveryhero/pipeline#pipelineshutsdownwheninputchannelisclosed)
+* [How to run a pipeline until the container is killed](https://github.com/deliveryhero/pipeline#PipelineShutsDownWhenContainerIsKilled)
+* [How to shut down a pipeline when there is a error](https://github.com/deliveryhero/pipeline#PipelineShutsDownOnError)
+* [How to shut down a pipeline after it has finished processing a batch of data](https://github.com/deliveryhero/pipeline#PipelineShutsDownWhenInputChannelIsClosed)
 
 ## Functions
+
+### func [Apply](/apply.go#L34)
+
+`func Apply[A, B, C any](a Processor[A, []B], b Processor[B, C]) Processor[A, []C]`
+
+Apply connects two processes, applying the second to each item of the first output
+
+```golang
+transform := pipeline.NewProcessor(func(_ context.Context, s string) ([]string, error) {
+    return strings.Split(s, ","), nil
+}, nil)
+
+double := pipeline.NewProcessor(func(_ context.Context, s string) (string, error) {
+    return s + s, nil
+}, nil)
+
+addLeadingZero := pipeline.NewProcessor(func(_ context.Context, s string) (string, error) {
+    return "0" + s, nil
+}, nil)
+
+apply := pipeline.Apply(
+    transform,
+    pipeline.Sequence(
+        double,
+        addLeadingZero,
+        double,
+    ),
+)
+
+input := "1,2,3,4,5"
+
+for out := range pipeline.Process(context.Background(), apply, pipeline.Emit(input)) {
+    for j := range out {
+        fmt.Printf("process: %s\n", out[j])
+    }
+}
+```
+
+ Output:
+
+```
+process: 011011
+process: 022022
+process: 033033
+process: 044044
+process: 055055
+```
 
 ### func [Buffer](/buffer.go#L5)
 
@@ -43,12 +90,12 @@ p := pipeline.Delay(ctx, time.Second/4,
 
 // If the context is canceled, pass the ints to the cancel func for teardown
 p = pipeline.Cancel(ctx, func(i int, err error) {
-    log.Printf("%+v could not be processed, %s", i, err)
+    fmt.Printf("%+v could not be processed, %s\n", i, err)
 }, p)
 
 // Otherwise, process the inputs
 for out := range p {
-    log.Printf("process: %+v", out)
+    fmt.Printf("process: %+v\n", out)
 }
 ```
 
@@ -232,7 +279,6 @@ ProcessBatchConcurrently fans the in channel out to multiple batch Processors ru
 then it fans the out channels of the batch Processors back into a single out chan
 
 ```golang
-
 // Create a context that times out after 5 seconds
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancel()
@@ -254,16 +300,18 @@ p = pipeline.ProcessBatchConcurrently(ctx, 2, 2, time.Minute, pipeline.NewProces
 for result := range p {
     fmt.Printf("result: %d\n", result)
 }
+```
 
-// Example Output:
-// result: 1
-// result: 2
-// result: 3
-// result: 5
-// error: could not process [7 8], context deadline exceeded
-// error: could not process [4 6], context deadline exceeded
-// error: could not process [9], context deadline exceeded
+Output:
 
+```
+result: 1
+result: 2
+result: 3
+result: 5
+error: could not process [7 8], context deadline exceeded
+error: could not process [4 6], context deadline exceeded
+error: could not process [9], context deadline exceeded
 ```
 
 ### func [ProcessConcurrently](/process.go#L26)
@@ -274,7 +322,6 @@ ProcessConcurrently fans the in channel out to multiple Processors running concu
 then it fans the out channels of the Processors back into a single out chan
 
 ```golang
-
 // Create a context that times out after 5 seconds
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancel()
@@ -296,16 +343,18 @@ p = pipeline.ProcessConcurrently(ctx, 2, pipeline.NewProcessor(func(ctx context.
 for result := range p {
     log.Printf("result: %d\n", result)
 }
+```
 
-// Example Output:
-// result: 2
-// result: 1
-// result: 4
-// result: 3
-// error: could not process 6, process was canceled
-// error: could not process 5, process was canceled
-// error: could not process 7, context deadline exceeded
+Output:
 
+```
+result: 2
+result: 1
+result: 4
+result: 3
+error: could not process 6, process was canceled
+error: could not process 5, process was canceled
+error: could not process 7, context deadline exceeded
 ```
 
 ### func [Split](/split.go#L4)

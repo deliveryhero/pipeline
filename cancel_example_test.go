@@ -2,7 +2,7 @@ package pipeline_test
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/deliveryhero/pipeline/v2"
@@ -20,12 +20,12 @@ func ExampleCancel() {
 
 	// If the context is canceled, pass the ints to the cancel func for teardown
 	p = pipeline.Cancel(ctx, func(i int, err error) {
-		log.Printf("%+v could not be processed, %s", i, err)
+		fmt.Printf("%+v could not be processed, %s\n", i, err)
 	}, p)
 
 	// Otherwise, process the inputs
 	for out := range p {
-		log.Printf("process: %+v", out)
+		fmt.Printf("process: %+v\n", out)
 	}
 
 	// Output:

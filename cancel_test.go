@@ -11,6 +11,8 @@ import (
 )
 
 func TestCancel(t *testing.T) {
+	t.Parallel()
+
 	const testDuration = time.Second
 
 	// Collect logs

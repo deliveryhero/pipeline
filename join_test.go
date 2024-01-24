@@ -8,6 +8,8 @@ import (
 )
 
 func TestJoin(t *testing.T) {
+	t.Parallel()
+
 	// Emit 10 numbers
 	want := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	ins := Emit(want...)

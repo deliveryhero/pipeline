@@ -8,6 +8,8 @@ import (
 )
 
 func TestProcessBatch(t *testing.T) {
+	t.Parallel()
+
 	const maxTestDuration = time.Second
 	type args struct {
 		ctxTimeout  time.Duration
@@ -55,8 +57,11 @@ func TestProcessBatch(t *testing.T) {
 		// Therefore the out channel should be closed when the test ends
 		wantOpen: false,
 	}}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
 			ctx, cancel := context.WithTimeout(context.Background(), tt.args.ctxTimeout)
 			defer cancel()
@@ -86,6 +91,8 @@ func TestProcessBatch(t *testing.T) {
 }
 
 func TestProcessBatchConcurrently(t *testing.T) {
+	t.Parallel()
+
 	const maxTestDuration = time.Second
 	type args struct {
 		ctxTimeout   time.Duration
@@ -136,8 +143,11 @@ func TestProcessBatchConcurrently(t *testing.T) {
 		// Therefore the out channel should be closed by the end of the test
 		wantOpen: false,
 	}}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
 			ctx, cancel := context.WithTimeout(context.Background(), tt.args.ctxTimeout)
 			defer cancel()
@@ -167,6 +177,8 @@ func TestProcessBatchConcurrently(t *testing.T) {
 }
 
 func Test_processBatch(t *testing.T) {
+	t.Parallel()
+
 	drain := make(chan int, 10000)
 	const maxTestDuration = time.Second
 	type args struct {
@@ -282,8 +294,12 @@ func Test_processBatch(t *testing.T) {
 			},
 		},
 	}}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx, cancel := context.WithTimeout(context.Background(), tt.args.ctxTimeout)
 			defer cancel()
 

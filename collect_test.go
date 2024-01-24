@@ -15,6 +15,8 @@ import (
 // 5. After duration with nothing in the buffer, nothing is returned, channel remains open
 // 6. Flushes the buffer if the context is canceled
 func TestCollect(t *testing.T) {
+	t.Parallel()
+
 	const maxTestDuration = time.Second
 	type args struct {
 		maxSize     int
@@ -109,6 +111,8 @@ func TestCollect(t *testing.T) {
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Create the in channel
 			in := make(chan int)
 			go func() {
@@ -152,7 +156,6 @@ func TestCollect(t *testing.T) {
 			if !reflect.DeepEqual(test.want.out, outs) {
 				t.Errorf("out = %v, want %v", outs, test.want.out)
 			}
-
 		})
 	}
 }

@@ -61,7 +61,7 @@ func ExampleProcessBatchConcurrently() {
 		fmt.Printf("result: %d\n", result)
 	}
 
-	// Example Output:
+	// Example Output
 	// result: 1
 	// result: 2
 	// result: 3

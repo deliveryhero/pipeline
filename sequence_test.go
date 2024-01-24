@@ -7,6 +7,8 @@ import (
 )
 
 func TestSequence(t *testing.T) {
+	t.Parallel()
+
 	// Create a step that increments the integer by 1
 	inc := NewProcessor(func(_ context.Context, i int) (int, error) {
 		i++

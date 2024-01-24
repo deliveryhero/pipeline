@@ -29,7 +29,7 @@ func ExampleProcess() {
 		fmt.Printf("result: %d\n", result)
 	}
 
-	// Output:
+	// Example Output:
 	// result: 10
 	// result: 20
 	// result: 30
